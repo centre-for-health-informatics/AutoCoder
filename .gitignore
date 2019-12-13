@@ -5,6 +5,7 @@ env/
 *.sqlite3
 secrets/
 .vscode/
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -63,7 +64,6 @@ coverage.xml
 *.log
 local_settings.py
 db.sqlite3
-migrations/
 
 # Flask stuff:
 instance/

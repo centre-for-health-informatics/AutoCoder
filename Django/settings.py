@@ -38,6 +38,7 @@ else:
 # Application definition
 
 INSTALLED_APPS = [
+    'users',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,14 +48,16 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'rest_framework',
     'django_rest_passwordreset',
+    'api.apps.ApiConfig',
     'corsheaders',
     'oauth2_provider',
 ]
 
+AUTH_USER_MODEL = 'users.CustomUser'
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
-    # 'oauth2_provider.middleware.OAuth2TokenMiddleware',
+    'django.middleware.common.CommonMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
