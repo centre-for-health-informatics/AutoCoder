@@ -1,6 +1,8 @@
 
 frontend/package-lock.json
 
+run.bat
+
 env/
 *.sqlite3
 secrets/
