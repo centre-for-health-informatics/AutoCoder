@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'corsheaders',
     'oauth2_provider',
+    'annotations',
 ]
 
 AUTH_USER_MODEL = 'users.CustomUser'

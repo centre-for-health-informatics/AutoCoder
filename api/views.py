@@ -72,7 +72,7 @@ class CreateUser(APIView):
 
 class RejectUser(APIView):
     """This is used  to remove a user from the system if the admin does not approve their account"""
-    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, idToDelete, format=None, **kwargs):
         try:
@@ -86,7 +86,7 @@ class RejectUser(APIView):
 
 class ValidateToken(APIView, permissions.BasePermission):
     """This is used to validate the token"""
-    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, format=None, **kwargs):
         return HttpResponse(status=200)
@@ -94,7 +94,7 @@ class ValidateToken(APIView, permissions.BasePermission):
 
 class UploadDoc(APIView):
     """Uploads document for processing"""
-    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, format=None, **kwargs):
         doc = request.data
@@ -124,3 +124,24 @@ class UploadDoc(APIView):
             "entities": entities
         }
         return obj
+
+
+class UploadAnnotation(APIView):
+    """Uploads annotations to backend to be saved"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, format=None, **kwargs):
+        annotations = json.loads(request.data['annotations'])
+        self._cleanJSON(annotations)
+
+        # TODO: Save to db
+
+        return HttpResponse(status=200)
+
+    def _cleanJSON(self, annotations):
+
+        for annot_type in annotations:
+            for annot in annotations[annot_type]:
+                if 'color' in annot:
+                    del annot['color']
