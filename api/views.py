@@ -12,12 +12,11 @@ from itertools import combinations
 from django.http import HttpResponse
 from django.forms.models import model_to_dict
 import json
-import random
 from django.db.models import Q
 from django.db import transaction
 from users.models import CustomUser
 from django.contrib.auth.hashers import make_password
-
+from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
 
 
@@ -127,7 +126,7 @@ class UploadDoc(APIView):
 
 
 class UploadAnnotation(APIView):
-    """Uploads annotations to backend to be saved"""
+    """Uploads annotations to backend to be saved."""
 
     permission_classes = [permissions.IsAuthenticated]
 
@@ -135,13 +134,31 @@ class UploadAnnotation(APIView):
         annotations = json.loads(request.data['annotations'])
         self._cleanJSON(annotations)
 
-        # TODO: Save to db
-
+        newAnnotation = Annotation.objects.create(
+            user=request.user,
+            data=annotations
+        )
+        newAnnotation.save()
         return HttpResponse(status=200)
 
     def _cleanJSON(self, annotations):
+        # TODO: add some data verification and checks here to prevent exploits
 
         for annot_type in annotations:
             for annot in annotations[annot_type]:
                 if 'color' in annot:
                     del annot['color']
+
+
+class GetAnnotation(APIView):
+    """Request annotations from backend that were previously saved by filename"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, filename, format=None, **kwargs):
+
+        try:
+            annotation = Annotation.objects.get(data__name=filename)
+            #TODO: WIP
+            return Response(annotation)
+        except ObjectDoesNotExist:
+            return Response({None})
