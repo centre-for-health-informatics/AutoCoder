@@ -158,7 +158,7 @@ class GetAnnotation(APIView):
 
         try:
             annotation = Annotation.objects.get(data__name=filename)
-            #TODO: WIP
-            return Response(annotation)
+            serializer = serializers.AnnotationSerializer(annotation, many=False)
+            return Response(serializer.data)
         except ObjectDoesNotExist:
             return Response({None})
