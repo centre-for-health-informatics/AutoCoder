@@ -157,7 +157,21 @@ class GetAnnotation(APIView):
     def get(self, request, filename, format=None, **kwargs):
 
         try:
-            annotation = Annotation.objects.get(data__name=filename)
+            annotations = Annotation.objects.filter(data__name=filename)
+            serializer = serializers.AnnotationSerializer(annotations, many=True)
+            return Response(serializer.data)
+        except ObjectDoesNotExist:
+            return Response({None})
+
+
+class GetLatestAnnotation(APIView):
+    """Request last updated annotation from backend that were previously saved by filename"""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, filename, format=None, **kwargs):
+
+        try:
+            annotation = Annotation.objects.filter(data__name=filename).order_by('-updated')[0]
             serializer = serializers.AnnotationSerializer(annotation, many=False)
             return Response(serializer.data)
         except ObjectDoesNotExist:

@@ -13,4 +13,4 @@ class AnnotationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Annotation
-        fields = ("id", "user", "data")
+        fields = ("id", "user", "data", "updated")
