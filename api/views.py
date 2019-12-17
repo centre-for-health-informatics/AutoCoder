@@ -142,12 +142,36 @@ class UploadAnnotation(APIView):
         return HttpResponse(status=200)
 
     def _cleanJSON(self, annotations):
-        # TODO: add some data verification and checks here to prevent exploits
+        """Cleans the JSON uploaded, remove any unwanted fields"""
+        allowed_keys = ['name', 'tagTemplates', 'Sections', 'Entities', 'Sentences']
+        allowed_tagTemplate_attr = ['id', 'description', 'color', 'type']
+        allowed_section_attr = ['start', 'end', 'type', 'tag']
+        allowed_entity_attr = ['start', 'end', 'type', 'tag']
+        allowed_sentence_attr = ['start', 'end', 'tag']
 
-        for annot_type in annotations:
-            for annot in annotations[annot_type]:
-                if 'color' in annot:
-                    del annot['color']
+        # Check the first level keys of the JSON object and delete keys not allowed
+        keys_to_remove = []
+        for key in annotations:
+            if not key in allowed_keys:
+                keys_to_remove.append(key)
+        for key in keys_to_remove:
+            del annotations[key]
+
+        self._clean_attributes(annotations, 'Sections', allowed_section_attr)
+        self._clean_attributes(annotations, 'tagTemplates', allowed_tagTemplate_attr)
+        self._clean_attributes(annotations, 'Entities', allowed_entity_attr)
+        self._clean_attributes(annotations, 'Sentences', allowed_sentence_attr)
+
+    def _clean_attributes(self, annotations, attr, allowed_attr):
+        """Given a list of allowed attributes for each object, removes unwanted objects."""
+        for item in annotations[attr]:
+            attr_to_remove = []
+            for attr in item:
+                if not attr in allowed_attr:
+                    attr_to_remove.append(attr)
+
+            for attr in attr_to_remove:
+                del item[attr]
 
 
 class GetAnnotation(APIView):
