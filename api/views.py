@@ -117,10 +117,10 @@ class UploadDoc(APIView):
         """Makes a serialized JSON string."""
         obj = {
             "filename": filename,
-            "sections": sections,
-            "sentences": sentences,
-            "tokens": tokens,
-            "entities": entities
+            "Sections": sections,
+            "Sentences": sentences,
+            "Tokens": tokens,
+            "Entities": entities
         }
         return obj
 
