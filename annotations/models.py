@@ -1,6 +1,7 @@
 from django.db import models
 from users.models import CustomUser
 from django.contrib.postgres.fields import JSONField
+from django.contrib.postgres.indexes import GinIndex
 
 
 class Annotation(models.Model):
@@ -11,3 +12,14 @@ class Annotation(models.Model):
 
     class Meta:
         db_table = "annotations"
+
+        indexes = [
+            models.Index(
+                fields=['user', 'updated'],
+                name='user_time_idx'
+            ),
+            GinIndex(
+                fields=['data'],
+                name='data_gin'
+            )
+        ]
