@@ -7,6 +7,7 @@ from django.contrib.postgres.indexes import GinIndex
 class Annotation(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(CustomUser, on_delete=models.DO_NOTHING)
+    sessionId = models.CharField(null=False, max_length=12, unique=True, blank=False)
     data = JSONField(default=dict)
     updated = models.DateTimeField(auto_now=True, editable=False, null=False, blank=False)
 
@@ -16,7 +17,7 @@ class Annotation(models.Model):
         indexes = [
 
             GinIndex(
-                fields=['user', 'data', 'updated'],
-                name='user_data_timestamp_gin'
+                fields=['user', 'data', 'updated', 'sessionId'],
+                name='annotation_gin'
             )
         ]

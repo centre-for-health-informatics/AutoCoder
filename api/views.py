@@ -131,19 +131,29 @@ class UploadAnnotation(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, format=None, **kwargs):
+
         annotations = json.loads(request.data['annotations'])
+
         self._cleanJSON(annotations)
 
-        newAnnotation = Annotation.objects.create(
+        newAnnotation, created = Annotation.objects.update_or_create(
             user=request.user,
-            data=annotations
+            sessionId=annotations['sessionId'],
+            defaults={
+                'user': request.user,
+                'sessionId': annotations['sessionId'],
+                'data': annotations,
+            }
         )
-        newAnnotation.save()
-        return HttpResponse(status=200)
+
+        if created:
+            return HttpResponse({'New annotation created'}, status=201)
+        else:
+            return HttpResponse({'Annotation updated.'}, status=200)
 
     def _cleanJSON(self, annotations):
         """Cleans the JSON uploaded, remove any unwanted fields"""
-        allowed_keys = ['name', 'tagTemplates', 'Sections', 'Entities', 'Sentences']
+        allowed_keys = ['filename', 'tagTemplates', 'Sections', 'Entities', 'Sentences', 'sessionId']
         allowed_tagTemplate_attr = ['id', 'description', 'color', 'type']
         allowed_section_attr = ['start', 'end', 'type', 'tag']
         allowed_entity_attr = ['start', 'end', 'type', 'tag']
@@ -180,12 +190,9 @@ class GetAnnotation(APIView):
 
     def get(self, request, filename, format=None, **kwargs):
 
-        try:
-            annotations = Annotation.objects.filter(data__name=filename)
-            serializer = serializers.AnnotationSerializer(annotations, many=True)
-            return Response(serializer.data)
-        except ObjectDoesNotExist:
-            return Response({None})
+        annotations = Annotation.objects.filter(data__filename=filename)
+        serializer = serializers.AnnotationSerializer(annotations, many=True)
+        return Response(serializer.data)
 
 
 class GetLatestAnnotation(APIView):
@@ -194,9 +201,10 @@ class GetLatestAnnotation(APIView):
 
     def get(self, request, filename, format=None, **kwargs):
 
-        try:
-            annotation = Annotation.objects.filter(data__name=filename).order_by('-updated')[0]
-            serializer = serializers.AnnotationSerializer(annotation, many=False)
+        annotations = Annotation.objects.filter(data__filename=filename).order_by('-updated')
+        if len(annotations) > 0:
+
+            serializer = serializers.AnnotationSerializer(annotations[0], many=False)
             return Response(serializer.data)
-        except ObjectDoesNotExist:
-            return Response({None})
+        else:
+            return Response(status=404)
