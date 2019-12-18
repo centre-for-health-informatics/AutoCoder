@@ -14,12 +14,9 @@ class Annotation(models.Model):
         db_table = "annotations"
 
         indexes = [
-            models.Index(
-                fields=['user', 'updated'],
-                name='user_time_idx'
-            ),
+
             GinIndex(
-                fields=['data'],
-                name='data_gin'
+                fields=['user', 'data', 'updated'],
+                name='user_data_timestamp_gin'
             )
         ]
