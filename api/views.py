@@ -132,10 +132,7 @@ class UploadAnnotation(APIView):
 
     def post(self, request, format=None, **kwargs):
 
-        annotations = request.data
-
-        print(annotations)
-        print('\n\n\n\n\n\n')
+        annotations = request.data.copy()
 
         self._cleanJSON(annotations)
 
@@ -200,7 +197,7 @@ class GetAnnotation(APIView):
 
     def get(self, request, filename, format=None, **kwargs):
 
-        annotations = Annotation.objects.filter(data__filename=filename)
+        annotations = Annotation.objects.filter(data__name=filename)
         serializer = serializers.AnnotationSerializer(annotations, many=True)
         return Response(serializer.data)
 
@@ -211,7 +208,7 @@ class GetLatestAnnotation(APIView):
 
     def get(self, request, filename, format=None, **kwargs):
 
-        annotations = Annotation.objects.filter(data__filename=filename).order_by('-updated')
+        annotations = Annotation.objects.filter(data__name=filename).order_by('-updated')
         if len(annotations) > 0:
 
             serializer = serializers.AnnotationSerializer(annotations[0], many=False)
