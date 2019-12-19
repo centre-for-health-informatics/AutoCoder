@@ -132,7 +132,10 @@ class UploadAnnotation(APIView):
 
     def post(self, request, format=None, **kwargs):
 
-        annotations = json.loads(request.data['annotations'])
+        annotations = request.data
+
+        print(annotations)
+        print('\n\n\n\n\n\n')
 
         self._cleanJSON(annotations)
 
@@ -153,7 +156,7 @@ class UploadAnnotation(APIView):
 
     def _cleanJSON(self, annotations):
         """Cleans the JSON uploaded, remove any unwanted fields"""
-        allowed_keys = ['filename', 'tagTemplates', 'Sections', 'Entities', 'Sentences', 'sessionId']
+        allowed_keys = ['name', 'tagTemplates', 'Sections', 'Entities', 'Sentences', 'sessionId']
         allowed_tagTemplate_attr = ['id', 'description', 'color', 'type']
         allowed_section_attr = ['start', 'end', 'type', 'tag']
         allowed_entity_attr = ['start', 'end', 'type', 'tag']
@@ -161,16 +164,23 @@ class UploadAnnotation(APIView):
 
         # Check the first level keys of the JSON object and delete keys not allowed
         keys_to_remove = []
+        keys_in_annotations = []
         for key in annotations:
             if not key in allowed_keys:
                 keys_to_remove.append(key)
+            else:
+                keys_in_annotations.append(key)
         for key in keys_to_remove:
             del annotations[key]
 
-        self._clean_attributes(annotations, 'Sections', allowed_section_attr)
-        self._clean_attributes(annotations, 'tagTemplates', allowed_tagTemplate_attr)
-        self._clean_attributes(annotations, 'Entities', allowed_entity_attr)
-        self._clean_attributes(annotations, 'Sentences', allowed_sentence_attr)
+        if 'Sections' in keys_in_annotations:
+            self._clean_attributes(annotations, 'Sections', allowed_section_attr)
+        if 'tagTemplates' in keys_in_annotations:
+            self._clean_attributes(annotations, 'tagTemplates', allowed_tagTemplate_attr)
+        if 'Entities' in keys_in_annotations:
+            self._clean_attributes(annotations, 'Entities', allowed_entity_attr)
+        if 'Sentences' in keys_in_annotations:
+            self._clean_attributes(annotations, 'Sentences', allowed_sentence_attr)
 
     def _clean_attributes(self, annotations, attr, allowed_attr):
         """Given a list of allowed attributes for each object, removes unwanted objects."""
