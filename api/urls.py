@@ -6,6 +6,6 @@ urlpatterns = [
     path('validateToken/', views.ValidateToken.as_view(), name="validate-token"),
     path('uploadDoc/', views.UploadDoc.as_view(), name="upload-doc"),
     path('uploadAnnot/', views.UploadAnnotation.as_view(), name="upload-annot"),
-    path('getAnnot/<str:filename>/', views.GetAnnotation.as_view(), name="get-annot"),
+    path('getAnnotationsByFilenameUser/<str:filename>/', views.GetAnnotationsByFilenameUser.as_view(), name="get-annotations-filename-user"),
     path('getLastAnnot/<str:filename>/', views.GetLatestAnnotation.as_view(), name="get-last-annot")
 ]

@@ -191,13 +191,13 @@ class UploadAnnotation(APIView):
                 del item[attr]
 
 
-class GetAnnotation(APIView):
+class GetAnnotationsByFilenameUser(APIView):
     """Request annotations from backend that were previously saved by filename"""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, filename, format=None, **kwargs):
 
-        annotations = Annotation.objects.filter(data__name=filename)
+        annotations = Annotation.objects.filter(data__name=filename).filter(user=request.user)
         serializer = serializers.AnnotationSerializer(annotations, many=True)
         return Response(serializer.data)
 
