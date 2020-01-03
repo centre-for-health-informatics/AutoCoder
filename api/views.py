@@ -1,4 +1,4 @@
-from api import serializers
+from api import serializers, pagination
 from rest_framework import generics
 from rest_framework.views import APIView
 from django.http import Http404
@@ -228,7 +228,7 @@ class GetAllAnnotationsByCurrentUserWithPagination(APIView):
 
         annotations = Annotation.objects.filter(user=request.user)
 
-        paginator = PageNumberPagination()
+        paginator = pagination.CustomPageNumberPagination()
 
         results = paginator.paginate_queryset(annotations, request)
 
