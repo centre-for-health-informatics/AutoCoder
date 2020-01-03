@@ -19,6 +19,8 @@ from django.contrib.auth.hashers import make_password
 from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
 
+from rest_framework.pagination import PageNumberPagination
+
 
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -215,3 +217,21 @@ class GetLatestAnnotation(APIView):
             return Response(serializer.data)
         else:
             return Response(status=404)
+
+
+class GetAllAnnotationsByCurrentUserWithPagination(APIView):
+    """Request all annotations done for all files by the current user"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, format=None, **kwargs):
+
+        annotations = Annotation.objects.filter(user=request.user)
+
+        paginator = PageNumberPagination()
+
+        results = paginator.paginate_queryset(annotations, request)
+
+        serializer = serializers.AnnotationSerializer(results, many=True)
+
+        return paginator.get_paginated_response(serializer.data)

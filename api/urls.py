@@ -7,5 +7,7 @@ urlpatterns = [
     path('uploadDoc/', views.UploadDoc.as_view(), name="upload-doc"),
     path('uploadAnnot/', views.UploadAnnotation.as_view(), name="upload-annot"),
     path('getAnnot/<str:filename>/', views.GetAnnotation.as_view(), name="get-annot"),
-    path('getLastAnnot/<str:filename>/', views.GetLatestAnnotation.as_view(), name="get-last-annot")
+    path('getLastAnnot/<str:filename>/', views.GetLatestAnnotation.as_view(), name="get-last-annot"),
+    path('getAllMyAnnots/',
+         views.GetAllAnnotationsByCurrentUserWithPagination.as_view(), name="get-all-my-annot")
 ]
