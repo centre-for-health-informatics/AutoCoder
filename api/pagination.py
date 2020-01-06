@@ -11,12 +11,12 @@ class CustomPageNumberPagination(PageNumberPagination):
     def get_paginated_response(self, data):
 
         return Response(OrderedDict([
-            ('per_page', len(self.page)),
+            ('per_page', self.page.paginator.per_page),
             ('page', self.page.number),
             ('total', self.page.paginator.count),
             ('total_pages', self.page.paginator.num_pages),
             ('next', self.get_next_params()),
-            ('previous', self.get_previous_link()),
+            ('previous', self.get_previous_params()),
             ('data', data)
         ]))
 
@@ -24,7 +24,7 @@ class CustomPageNumberPagination(PageNumberPagination):
         if not self.page.has_next():
             return None
         page_number = self.page.next_page_number()
-        page_size = len(self.page)
+        page_size = self.page.paginator.per_page
         next_params = f'?{self.page_query_param}={page_number}&{self.page_size_query_param}={page_size}'
 
         return next_params
@@ -33,7 +33,7 @@ class CustomPageNumberPagination(PageNumberPagination):
         if not self.page.has_previous():
             return None
         page_number = self.page.previous_page_number()
-        page_size = len(self.page)
+        page_size = self.page.paginator.per_page
         next_params = f'?{self.page_query_param}={page_number}&{self.page_size_query_param}={page_size}'
 
         return next_params
