@@ -133,6 +133,10 @@ class UploadAnnotation(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, format=None, **kwargs):
+        print('\n\n\n\n\n\n')
+        print(request.data['name'])
+
+
 
         annotations = request.data.copy()
 
@@ -141,6 +145,7 @@ class UploadAnnotation(APIView):
         newAnnotation, created = Annotation.objects.update_or_create(
             user=request.user,
             sessionId=annotations['sessionId'],
+            data__name=request.data['name'],
             defaults={
                 'user': request.user,
                 'sessionId': annotations['sessionId'],
