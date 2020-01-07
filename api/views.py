@@ -226,7 +226,14 @@ class GetAllAnnotationsByCurrentUserWithPagination(APIView):
 
     def get(self, request, format=None, **kwargs):
 
-        annotations = Annotation.objects.filter(user=request.user)
+        orderBy = request.GET['orderBy']
+
+        if request.GET['order'] == 'desc':
+            order = '-'
+        else:
+            order = ''
+
+        annotations = Annotation.objects.filter(user=request.user).order_by(order+orderBy)
 
         paginator = pagination.CustomPageNumberPagination()
 
