@@ -18,6 +18,7 @@ from users.models import CustomUser
 from django.contrib.auth.hashers import make_password
 from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
+from django.contrib.postgres.fields.jsonb import KeyTextTransform
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -233,12 +234,15 @@ class GetAllAnnotationsByCurrentUserWithPagination(APIView):
         else:
             order = ''
 
-        annotations = Annotation.objects.filter(user=request.user).order_by(order+orderBy)
+        annotations = Annotation.objects.filter(user=request.user)
+        # Adding 'filename' field to annotation object by taking the value of 'name' (key) in 'data' (json field)
+        annotations = annotations.annotate(filename=KeyTextTransform('name', 'data'))
+        annotations = annotations.order_by(order + orderBy)
 
         paginator = pagination.CustomPageNumberPagination()
 
         results = paginator.paginate_queryset(annotations, request)
 
-        serializer = serializers.AnnotationSerializer(results, many=True)
+        serializer = serializers.AnnotationSerializerWithFilename(results, many=True)
 
         return paginator.get_paginated_response(serializer.data)

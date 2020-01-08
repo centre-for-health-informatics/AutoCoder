@@ -14,3 +14,14 @@ class AnnotationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Annotation
         fields = ("id", "user", "data", "updated")
+
+
+class AnnotationSerializerWithFilename(serializers.ModelSerializer):
+    filename = serializers.SerializerMethodField()
+
+    def get_filename(self, obj):
+        return obj.filename
+
+    class Meta:
+        model = Annotation
+        fields = ("id", "filename", "updated")
