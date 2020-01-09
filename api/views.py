@@ -18,7 +18,7 @@ from users.models import CustomUser
 from django.contrib.auth.hashers import make_password
 from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
-from django.contrib.postgres.fields.jsonb import KeyTextTransform
+from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -246,3 +246,24 @@ class GetAllAnnotationsByCurrentUserWithPagination(APIView):
         serializer = serializers.AnnotationSerializerWithFilename(results, many=True)
 
         return paginator.get_paginated_response(serializer.data)
+
+
+class ExportAnnotations(APIView):
+    """Returns annotations to export based on sessionId"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, sessionId, format=None, **kwargs):
+        # filtering annotations from current session for specific user
+        annotations = Annotation.objects.filter(user=request.user).filter(sessionId=sessionId)
+        # Adding fields to objects based upon json (see GetAllAnnotationsByCurrentUserWithPagination for in depth explantion)
+        annotations = annotations.annotate(Entities=KeyTransform('Entities', 'data'))
+        annotations = annotations.annotate(Sections=KeyTransform('Sections', 'data'))
+        annotations = annotations.annotate(Sentences=KeyTransform('Sentences', 'data'))
+        annotations = annotations.annotate(tagTemplates=KeyTransform('tagTemplates', 'data'))
+        annotations = annotations.annotate(name=KeyTextTransform('name', 'data'))
+
+        serializer = serializers.AnnotationSerializerForExporting(annotations, many=True)
+
+        print(serializer.data)
+        return Response(serializer.data)

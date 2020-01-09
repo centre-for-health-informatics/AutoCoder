@@ -10,5 +10,6 @@ urlpatterns = [
          views.GetAllAnnotationsByCurrentUserWithPagination.as_view(), name="get-all-my-annot"),
     path('getAnnotationsByFilenameUser/<str:filename>/',
          views.GetAnnotationsByFilenameUser.as_view(), name="get-annotations-filename-user"),
-    path('getLastAnnot/<str:filename>/', views.GetLatestAnnotation.as_view(), name="get-last-annot")
+    path('getLastAnnot/<str:filename>/', views.GetLatestAnnotation.as_view(), name="get-last-annot"),
+    path('exportAnnotations/<str:sessionId>/', views.ExportAnnotations.as_view(), name='export-annotations')
 ]
