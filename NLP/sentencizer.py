@@ -42,9 +42,9 @@ class Sentencizer:
             end_char = self.doc[sent.end-1].idx + len(self.doc[sent.end-1])
             
             if 'number' in kwargs and kwargs['number']:   # Optional argument for displaying numbering in annotations
-                label=str(i)
+                tag=str(i)
             else:
-                label=''
+                tag=''
 
-            sentences.append({"start":start_char, "end": end_char, "label": ''})
+            sentences.append({"start":start_char, "end": end_char, "tag": ''})
         return sentences

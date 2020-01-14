@@ -59,10 +59,10 @@ class CustomTokenizer:
             end = start + len(token)
             
             if 'number' in kwargs and kwargs['number']:   # Optional argument for displaying numbering in annotations
-                label=str(i)
+                tag=str(i)
             else:
-                label=''
+                tag=''
             
-            tokens.append({"start":start, "end":end, "label": label})
+            tokens.append({"start":start, "end":end, "tag": tag})
             
         return tokens

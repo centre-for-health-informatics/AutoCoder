@@ -78,7 +78,7 @@ class Sectionizer:
         for sec in sections:
             start = sec['text_indicies'][0]
             end = sec['text_indicies'][1]
-            label = sec['standard_header']
-            sections_annotate.append({"start": start, "end": end, "label": label, "type": "Sections"})
+            tag = sec['standard_header']
+            sections_annotate.append({"start": start, "end": end, "tag": tag, "type": "Sections"})
 
         return sections_annotate
