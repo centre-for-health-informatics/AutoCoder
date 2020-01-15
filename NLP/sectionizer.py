@@ -13,7 +13,7 @@ class Sectionizer:
         expressions = set()   # regex for section headers in document
         sections = defaultdict(list)
 
-        with open("NLP/data/sections.csv") as f:   # file containing dictionary for mapping section headers
+        with open("NLP/secrets/sections.csv") as f:   # file containing dictionary for mapping section headers
             for line in f:
                 section = line.strip().split(',')[0]
                 description = line.strip().split(',')[1].lower()
