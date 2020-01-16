@@ -10,7 +10,7 @@ class LanguageProcessor:
         nlp = spacy.load('en_core_web_lg')
         self.doc = nlp(text)
 
-        self.sectionizer = Sectionizer(self.doc)
+        self.sectionizer = Sectionizer(self.doc, "NLP/secrets/sections.csv")
         self.entityMatcher = EntityMatchers(self.doc, nlp)
         self.sentencizer = Sentencizer(self.doc, nlp)
         self.tokenizer = CustomTokenizer(self.doc, nlp)
