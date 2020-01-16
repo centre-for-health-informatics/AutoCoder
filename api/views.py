@@ -97,6 +97,7 @@ class ValidateToken(APIView, permissions.BasePermission):
 class UploadDoc(APIView):
     """Uploads document for processing"""
     permission_classes = [permissions.IsAuthenticated]
+    langProcessor = LanguageProcessor()
 
     def post(self, request, format=None, **kwargs):
         doc = request.data
@@ -109,11 +110,13 @@ class UploadDoc(APIView):
 
     def _processDoc(self, text):
         """Runs NLP to process document, returns document sections, sentences, tokens, and entities."""
-        lp = LanguageProcessor(text)
-        sections = lp.getDocumentSections()
-        sentences = lp.getDocumentSentences()
-        tokens = lp.getDocumentTokens()
-        entities = lp.getDocumentEntities()
+
+        UploadDoc.langProcessor.setText(text)
+
+        entities = UploadDoc.langProcessor.getDocumentEntities()
+        sections = UploadDoc.langProcessor.getDocumentSections()
+        sentences = UploadDoc.langProcessor.getDocumentSentences()
+        tokens = UploadDoc.langProcessor.getDocumentTokens()
         return (sections, sentences, tokens, entities)
 
     def _makeJSON(self, filename, sections, sentences, tokens, entities):
