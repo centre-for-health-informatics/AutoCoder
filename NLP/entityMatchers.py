@@ -4,8 +4,7 @@ from NLP.matcherPatterns import Labels, negation_forward_patterns, negation_back
 
 class EntityMatchers:
 
-    def __init__(self, doc, nlp):
-        self.doc = doc
+    def __init__(self, nlp):
         self.negation_matcher = Matcher(nlp.vocab)
         self.closure_matcher = Matcher(nlp.vocab)
 
@@ -100,29 +99,29 @@ class EntityMatchers:
         self.negation_matcher.add(Labels.NEGATION_BIDIRECTION_LABEL, None, *negation_bidirection_patterns)
         self.closure_matcher.add(Labels.CLOSURE_BUT_LABEL, None, *closure_patterns)
 
-    def _getNegationMatches(self):
+    def _getNegationMatches(self, doc):
         '''Returns list of tuples describing matches in format of (match_id, start_token_#, end_token_#)'''
-        return self.negation_matcher(self.doc)
+        return self.negation_matcher(doc)
 
-    def _getClosureMatches(self):
+    def _getClosureMatches(self, doc):
         '''Returns list of tuples describing matches in format of (match_id, start_token_#, end_token_#)'''
-        return self.closure_matcher(self.doc)
+        return self.closure_matcher(doc)
 
-    def getMatchesForAnnotation(self):
+    def getMatchesForAnnotation(self, doc, **kwargs):
         '''Helper function used for manually visualizing a set of matched entities. 
         Given 1 or more sets of matches, returns a list of entities to be annotated manually.
         Returns list of dictionary containing: start_char_#, end_char_#, label.'''
 
         entities = []
-        listOfMatches = [self._getNegationMatches(), self._getClosureMatches()]
+        listOfMatches = [self._getNegationMatches(doc), self._getClosureMatches(doc)]
 
         for matches in listOfMatches:
             for match_id, start, end in matches:
-                start_token = self.doc[start]
-                end_token = self.doc[end]
+                start_token = doc[start]
+                end_token = doc[end]
                 annotate_start_char = start_token.idx
                 annotate_end_char = end_token.idx + len(end_token)
-                tag = self.doc.vocab.strings[match_id]
-                entities.append({"start": annotate_start_char, "end": annotate_end_char, "tag": tag, "type": "Logic"})
+                label = doc.vocab.strings[match_id]
+                entities.append({"start": annotate_start_char, "end": annotate_end_char, "tag": label, "type": "Logic"})
 
         return entities
