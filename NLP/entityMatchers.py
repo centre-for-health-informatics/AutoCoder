@@ -14,7 +14,7 @@ class EntityMatchers:
     def _addMatcherPatternFromFile(self):
         '''Function for loading matcher terms from file to negation_matcher.'''
 
-        matcher_terms = self._loadNegationTermsFromFile("data/neg_list_complete.txt")
+        matcher_terms = self._loadNegationTermsFromFile("NLP/secrets/neg_list_complete.txt")
 
         for matcher_item in matcher_terms:
             phrase_string = matcher_item['phrases']   # ie: "[{'LOWER': 'negative'},{'LOWER': 'for'}]"
