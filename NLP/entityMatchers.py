@@ -118,7 +118,7 @@ class EntityMatchers:
         for matches in listOfMatches:
             for match_id, start, end in matches:
                 start_token = doc[start]
-                end_token = doc[end]
+                end_token = doc[end-1]
                 annotate_start_char = start_token.idx
                 annotate_end_char = end_token.idx + len(end_token)
                 label = doc.vocab.strings[match_id]
