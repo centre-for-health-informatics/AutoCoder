@@ -55,28 +55,41 @@ class IcdKeywordMatcher:
 
         return knowledgeDictionaries
 
-    def getIcdCodes(self, text, entities):
+    def getIcdAnnotations(self, keywordMatches):
         '''
-        Given a string of text, and a list of entities that denotes positions of keywords within the string,
-        returns a list of tuples, where the first element is an icd code, and the second element is a list of trigger tokens.
+        Given a list of icd keyword matches found in a document that denotes positions of keywords within the string,
+        Returns a list of annotations.
         Params:
-        - doc: text string
-        - entities: a list of dictionaries describing position of tokens in the format of: 
-                [{'start': 8676, 'end': 8679, 'tag': 'NEG_F'},
-                 {'start': 606, 'end': 609, 'tag': 'CLOS'},
-                 {'start': 279, 'end': 285, 'tag': 'ICD_KW'},
-                 {'start': 305, 'end': 307, 'tag': 'ICD_KW'}]
+        - keywordMatches: a list of dictionaries describing position of tokens, dictionaries must have the key 'text' as required by self.getICDforTokens().
         '''
-        keywordAnnot = list(filter((lambda ent: ent['tag'] == Labels.ICD_KEYWORD_LABEL), entities))
 
-        keywordTokens = []
+        icdCodeTuples = self.getICDforTokens(keywordMatches)
+        ''' 
+        list of tuples in the form such as the following
+        ('I46.8',
+          [{'start': 279, 'end': 285, 'text': 'arrest', 'type': 'ICD_KW'},
+           {'start': 2850, 'end': 2857, 'text': 'cardiac', 'type': 'ICD_KW'}])
+        '''
+        annotations = []
 
-        for annot in keywordAnnot:
-            phrase = text[annot['start']:annot['end']]
-            token = {'text': phrase, 'meta': annot}
-            keywordTokens.append(token)
+        for icdLabel, meta in icdCodeTuples:
 
-        return self.getICDforTokens(keywordTokens)
+            for i, annotation in enumerate(meta):
+
+                annot = {"start": annotation['start'],
+                         "end": annotation['end'],
+                         "tag": icdLabel,
+                         "type": Labels.ICD_KEYWORD_LABEL
+                         }
+
+                if i > 0:
+
+                    prevAnnot['next'] = annot
+
+                prevAnnot = annot
+                annotations.append(annot)
+
+        return annotations
 
     def getICDforTokens(self, searchTokens):
         '''

@@ -124,36 +124,52 @@ class EntityMatchers:
         self.negation_matcher.add(Labels.NEGATION_BIDIRECTION_LABEL, None, *negation_bidirection_patterns)
         self.closure_matcher.add(Labels.CLOSURE_BUT_LABEL, None, *closure_patterns)
 
-    def _getNegationMatches(self, doc, **kwargs):
-        '''Returns list of tuples describing matches in format of (match_id, start_token_#, end_token_#)'''
-        return self.negation_matcher(doc)
+    def _parseMatches(self, matchList, doc, tagType):
+        '''Helper function that parse the list of matches as output from Spacy, and returns a list of matches using our annotation notations.'''
 
-    def _getClosureMatches(self, doc, **kwargs):
-        '''Returns list of tuples describing matches in format of (match_id, start_token_#, end_token_#)'''
-        return self.closure_matcher(doc)
+        outputMatches = []
+        for match_id, start, end in matchList:
+            start_token = doc[start]
+            end_token = doc[end-1]
+            annotate_start_char = start_token.idx
+            annotate_end_char = end_token.idx + len(end_token)
+            label = doc.vocab.strings[match_id]
+            outputMatches.append({"start": annotate_start_char, "end": annotate_end_char,
+                                  "tag": label, "type": tagType})
 
-    def _getIcdKeywordMatches(self, doc, **kwargs):
-        if 'disableICD' in kwargs:
-            return []
-        else:
-            return self.icd_kw_matcher(doc)
+        return outputMatches
 
-    def getMatchesForAnnotation(self, doc, **kwargs):
-        '''Helper function used for manually visualizing a set of matched entities. 
-        Given 1 or more sets of matches, returns a list of entities to be annotated manually.
-        Returns list of dictionary containing: start_char_#, end_char_#, label.'''
+    def getNegationMatches(self, doc):
+        '''Returns list of dictionary containing: start char #, end char #, label, type'''
+        spacyMatches = self.negation_matcher(
+            doc)  # list of tuples describing matches in format of (match_id, start_token_#, end_token_#)
+        annotMatches = self._parseMatches(spacyMatches, doc, 'Logic')
+        return annotMatches
 
-        entities = []
-        listOfMatches = [self._getNegationMatches(
-            doc, **kwargs), self._getClosureMatches(doc, **kwargs), self._getIcdKeywordMatches(doc, **kwargs)]
+    def getClosureMatches(self, doc):
+        '''Returns list of dictionary containing: start char #, end char #, label, type'''
+        spacyMatches = self.closure_matcher(
+            doc)  # list of tuples describing matches in format of (match_id, start_token_#, end_token_#)
+        annotMatches = self._parseMatches(spacyMatches, doc, 'Logic')
+        return annotMatches
 
-        for matches in listOfMatches:
-            for match_id, start, end in matches:
-                start_token = doc[start]
-                end_token = doc[end-1]
-                annotate_start_char = start_token.idx
-                annotate_end_char = end_token.idx + len(end_token)
-                label = doc.vocab.strings[match_id]
-                entities.append({"start": annotate_start_char, "end": annotate_end_char, "tag": label})
+    def getIcdKeywordMatches(self, doc):
+        '''Get list of ICD keyword matches from document.'''
+        spacyMatches = self.icd_kw_matcher(doc)
 
-        return entities
+        outputMatches = []
+
+        for match_id, start, end in spacyMatches:
+            start_token = doc[start]
+            end_token = doc[end-1]
+            annotate_start_char = start_token.idx
+            annotate_end_char = end_token.idx + len(end_token)
+            text = doc.text[annotate_start_char:annotate_end_char]
+            outputMatches.append({"start": annotate_start_char, "end": annotate_end_char,
+                                  "text": text, "type": Labels.ICD_KEYWORD_LABEL})
+
+        return outputMatches
+
+    def getLogicMatchesForAnnotation(self, doc):
+
+        return [*self.getNegationMatches(doc), *self.getClosureMatches(doc)]

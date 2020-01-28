@@ -22,14 +22,14 @@ class LanguageProcessor:
     def analyzeText(self, text):
         self.doc = self.nlp(text)
         self.sections = self.sectionizer.getSectionsForAnnotation(self.doc)
-        self.entities = self.entityMatcher.getMatchesForAnnotation(self.doc)
+        self.logicEntities = self.entityMatcher.getLogicMatchesForAnnotation(self.doc)
+        self.icdKeywords = self.entityMatcher.getIcdKeywordMatches(self.doc)
         self.sentences = self.sentencizer.getMatchesForAnnotation(self.doc)
         self.tokens = self.tokenizer.getMatchesForAnnotation(self.doc)
-        self.icdCodes = self.icdKwMatcher.getIcdCodes(text, self.entities)
+        self.icdEntities = self.icdKwMatcher.getIcdAnnotations(self.icdKeywords)
 
-        return {'entities': self.entities,
+        return {'entities': [*self.logicEntities, *self.icdEntities],
                 'sections': self.sections,
                 'sentences': self.sentences,
                 'tokens': self.tokens,
-                'icdCodes': self.icdCodes
                 }

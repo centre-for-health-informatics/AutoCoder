@@ -117,7 +117,6 @@ class UploadDoc(APIView):
         sections = results['sections']
         sentences = results['sentences']
         tokens = results['tokens']
-        icdCodes = results['icdCodes']
         return (sections, sentences, tokens, entities)
 
     def _makeJSON(self, filename, sections, sentences, tokens, entities):
