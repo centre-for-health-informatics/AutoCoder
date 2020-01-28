@@ -7,7 +7,7 @@ from collections import defaultdict
 class Sectionizer:
 
     def __init__(self, patternFile):
-
+        print("Initializing Sectionizer...")
         self._loadPatternsFromFile(patternFile)
 
     def _loadPatternsFromFile(self, patternFile):

@@ -1,6 +1,7 @@
 class Sentencizer:
 
     def __init__(self, nlp):
+        print("Initializing Sentencizer...")
         self.nlp = nlp
         self.nlp.add_pipe(self._sentence_boundary, before='parser')
 

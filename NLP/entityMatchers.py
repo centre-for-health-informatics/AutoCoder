@@ -1,18 +1,43 @@
-from spacy.matcher import Matcher
+from spacy.matcher import Matcher, PhraseMatcher
 from NLP.matcherPatterns import Labels, negation_forward_patterns, negation_backward_patterns, negation_bidirection_patterns, closure_patterns
+import csv
 
 
 class EntityMatchers:
 
-    def __init__(self, nlp):
+    def __init__(self, nlp, icdKeywordPhrases, **kwargs):
+        print("Initializing EntityMatcher...")
         self.negation_matcher = Matcher(nlp.vocab)
         self.closure_matcher = Matcher(nlp.vocab)
+        self.icd_kw_matcher = PhraseMatcher(nlp.vocab)
 
-        # self._addMatcherPatternFromFile()
+        # self._addNegationPatternFromFile()
         self._buildMatchers()
+        #  self._loadIcdKeywordFromFile(nlp, filePath)
+        self._loadIcdKeywordPhrases(nlp, icdKeywordPhrases)
 
-    def _addMatcherPatternFromFile(self):
-        '''Function for loading matcher terms from file to negation_matcher.'''
+    def _loadIcdKeywordPhrases(self, nlp, icdKeywordPhrases):
+        '''Given a list of phrases, create PhraseMatcher patterns'''
+        patterns = []
+        for phrase in icdKeywordPhrases:
+            patterns.append(nlp(phrase))
+
+        print("Finalizing PhraseMatcher...")
+        self.icd_kw_matcher.add(Labels.ICD_KEYWORD_LABEL, None, *patterns)
+
+    def _loadIcdKeywordFromFile(self, nlp, IcdKeywordFile):
+        '''Function for loading Icd keyword phrases from file, and create PhraseMatcher patterns'''
+        with open(IcdKeywordFile, mode='r') as file:
+            csvReader = csv.reader(file)
+            phrases = list(map(lambda item: item[0], list(csvReader)))
+            patterns = []
+            for phrase in phrases:
+                patterns.append(nlp(phrase))
+
+            self.icd_kw_matcher.add(Labels.ICD_KEYWORD_LABEL, None, *patterns)
+
+    def _addNegationPatternFromFile(self):
+        '''Function for loading negation matcher terms from file to negation_matcher.'''
 
         matcher_terms = self._loadNegationTermsFromFile("NLP/secrets/neg_list_complete.txt")
 
@@ -99,13 +124,19 @@ class EntityMatchers:
         self.negation_matcher.add(Labels.NEGATION_BIDIRECTION_LABEL, None, *negation_bidirection_patterns)
         self.closure_matcher.add(Labels.CLOSURE_BUT_LABEL, None, *closure_patterns)
 
-    def _getNegationMatches(self, doc):
+    def _getNegationMatches(self, doc, **kwargs):
         '''Returns list of tuples describing matches in format of (match_id, start_token_#, end_token_#)'''
         return self.negation_matcher(doc)
 
-    def _getClosureMatches(self, doc):
+    def _getClosureMatches(self, doc, **kwargs):
         '''Returns list of tuples describing matches in format of (match_id, start_token_#, end_token_#)'''
         return self.closure_matcher(doc)
+
+    def _getIcdKeywordMatches(self, doc, **kwargs):
+        if 'disableICD' in kwargs:
+            return []
+        else:
+            return self.icd_kw_matcher(doc)
 
     def getMatchesForAnnotation(self, doc, **kwargs):
         '''Helper function used for manually visualizing a set of matched entities. 
@@ -113,7 +144,8 @@ class EntityMatchers:
         Returns list of dictionary containing: start_char_#, end_char_#, label.'''
 
         entities = []
-        listOfMatches = [self._getNegationMatches(doc), self._getClosureMatches(doc)]
+        listOfMatches = [self._getNegationMatches(
+            doc, **kwargs), self._getClosureMatches(doc, **kwargs), self._getIcdKeywordMatches(doc, **kwargs)]
 
         for matches in listOfMatches:
             for match_id, start, end in matches:
@@ -122,6 +154,6 @@ class EntityMatchers:
                 annotate_start_char = start_token.idx
                 annotate_end_char = end_token.idx + len(end_token)
                 label = doc.vocab.strings[match_id]
-                entities.append({"start": annotate_start_char, "end": annotate_end_char, "tag": label, "type": "Logic"})
+                entities.append({"start": annotate_start_char, "end": annotate_end_char, "tag": label})
 
         return entities

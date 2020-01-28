@@ -111,12 +111,13 @@ class UploadDoc(APIView):
     def _processDoc(self, text):
         """Runs NLP to process document, returns document sections, sentences, tokens, and entities."""
 
-        UploadDoc.langProcessor.setText(text)
+        results = UploadDoc.langProcessor.analyzeText(text)
 
-        entities = UploadDoc.langProcessor.getDocumentEntities()
-        sections = UploadDoc.langProcessor.getDocumentSections()
-        sentences = UploadDoc.langProcessor.getDocumentSentences()
-        tokens = UploadDoc.langProcessor.getDocumentTokens()
+        entities = results['entities']
+        sections = results['sections']
+        sentences = results['sentences']
+        tokens = results['tokens']
+        icdCodes = results['icdCodes']
         return (sections, sentences, tokens, entities)
 
     def _makeJSON(self, filename, sections, sentences, tokens, entities):

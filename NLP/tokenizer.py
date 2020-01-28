@@ -7,6 +7,7 @@ import re
 class CustomTokenizer:
 
     def __init__(self, nlp):
+        print("Initializing Tokenizer...")
         self.nlp = nlp
         self.nlp.tokenizer = self.custom_tokenizer()
 
