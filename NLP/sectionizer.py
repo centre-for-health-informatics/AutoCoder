@@ -87,7 +87,7 @@ class Sectionizer:
         sectionEndings = [] # characters where sections end
         for ending in endingStrings:
             for match in re.finditer(ending, doc.text.lower()):
-                sectionEndings.append(match.span[0]) 
+                sectionEndings.append(match.span()[0]) 
         return sectionEndings
 
     def _getSectionsFromDoc(self, doc):
@@ -123,8 +123,6 @@ class Sectionizer:
         document = []
 
         for i, section in enumerate(doc_sections):
-            print("\n\n\n\n")
-            print(section)
             general_section = ''
             for key, value in self.sections.items():
                 if section[2].replace('*', '') in value or section[2].replace('*', '')[:-1] in value:
