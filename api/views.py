@@ -20,8 +20,6 @@ from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
 from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
 
-from rest_framework.pagination import PageNumberPagination
-
 
 class IsAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -237,10 +235,8 @@ class GetAllAnnotationsByCurrentUserWithPagination(APIView):
         else:
             order = ''
 
-        annotations = Annotation.objects.filter(user=request.user)
-        # Adding 'filename' field to annotation object by taking the value of 'name' (key) in 'data' (json field)
-        annotations = annotations.annotate(filename=KeyTextTransform('name', 'data'))
-        annotations = annotations.order_by(order + orderBy)
+        annotations = Annotation.objects.filter(user=request.user).annotate(
+            filename=KeyTextTransform('name', 'data')).order_by(order + orderBy)
 
         paginator = pagination.CustomPageNumberPagination()
 
