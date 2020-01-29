@@ -82,6 +82,14 @@ class Sectionizer:
 
         return root
 
+    def _findSectionEndings(self,doc):
+        endingStrings = ['electronically signed by', 'authenticated signature applied', 'dictated by:', '\n___+\n']
+        sectionEndings = [] # characters where sections end
+        for ending in endingStrings:
+            for match in re.finditer(ending, doc.text.lower()):
+                sectionEndings.append(match.span[0]) 
+        return sectionEndings
+
     def _getSectionsFromDoc(self, doc):
         '''Given a Spacy document, outputs a list of tuples containing character index (start, end) and text of the section headers.'''
 
@@ -93,26 +101,30 @@ class Sectionizer:
                 section = doc.text.lower()[start+1:end-1]
                 doc_sections.append((start, end, section))
 
-        # Sorting sections in order and adding section at the beginning if there is not a section there
+        # Sorting sections in order
         doc_sections.sort()
 
-        if len(doc_sections) > 0 and doc_sections[0][0] != 0:
-            temp = doc_sections
-            doc_sections = [(0, 0, '')]
-            doc_sections.extend(temp)
-        else:
-            doc_sections = [(0, 0, '')]
+        # Adding section at the beginning if there is not a section there
+        # if len(doc_sections) > 0 and doc_sections[0][0] != 0:
+        #     temp = doc_sections
+        #     doc_sections = [(0, 0, '')]
+        #     doc_sections.extend(temp)
+        # else:
+        #     doc_sections = [(0, 0, '')]
 
         return doc_sections
 
     def _sectionizeDoc(self, doc):
         '''Creates a list of sections from a given Spacy doc.
-        Returns a list of dictionaries. Each dictionary contains standard_header, header_in_doc, text_indicies, and text.'''
+        Returns a list of dictionaries. Each dictionary contains standard_header, header_in_doc, and text_indicies.'''
 
+        endings = self._findSectionEndings(doc)
         doc_sections = self._getSectionsFromDoc(doc)
         document = []
 
         for i, section in enumerate(doc_sections):
+            print("\n\n\n\n")
+            print(section)
             general_section = ''
             for key, value in self.sections.items():
                 if section[2].replace('*', '') in value or section[2].replace('*', '')[:-1] in value:
@@ -120,12 +132,23 @@ class Sectionizer:
             sec_dict = dict()
             sec_dict['standard_header'] = general_section
             sec_dict['header_in_doc'] = section
+
+            # For all sections except the last one, go to section ending or a defined ending of a section
             if i != len(doc_sections) - 1:
-                sec_dict['text_indicies'] = (section[0], doc_sections[i+1][0])
-                sec_dict['text'] = doc.text[section[0]:doc_sections[i+1][0]]
+                end = None
+                for ending in endings:
+                    if ending > section[0]:
+                        end = ending
+                        break
+                sec_dict['text_indicies'] = (section[0], min(doc_sections[i+1][0], end) if end else doc_sections[i+1][0])
+            # for the last section
             else:
-                sec_dict['text_indicies'] = (section[0], len(doc.text))
-                sec_dict['text'] = doc.text[section[0]:]
+                end = None
+                for ending in endings:
+                    if ending > section[0]:
+                        end = ending
+                        break
+                sec_dict['text_indicies'] = (section[0], end if end else len(doc.text))
 
             document.append(sec_dict)
         return document
