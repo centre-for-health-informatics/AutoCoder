@@ -238,13 +238,32 @@ class GetAllAnnotationsByCurrentUserWithPagination(APIView):
         # Adding 'filename' field to annotation object by taking the value of 'name' (key) in 'data' (json field)
         annotations = Annotation.objects.filter(user=request.user).annotate(
             filename=KeyTextTransform('name', 'data')).order_by(order + orderBy)
-
         paginator = pagination.CustomPageNumberPagination()
-
         results = paginator.paginate_queryset(annotations, request)
-
         serializer = serializers.AnnotationSerializerWithFilename(results, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
+
+class GetAllAnnotationsWithPagination(APIView):
+    """Request all annotations done for all files for admin review"""
+
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def get(self, request, format=None, **kwargs):
+
+        orderBy = request.GET['orderBy']
+
+        if request.GET['order'] == 'desc':
+            order = '-'
+        else:
+            order = ''
+
+        # Adding 'filename' field to annotation object by taking the value of 'name' (key) in 'data' (json field)
+        annotations = Annotation.objects.all().annotate(
+            filename=KeyTextTransform('name', 'data')).order_by(order + orderBy)
+        paginator = pagination.CustomPageNumberPagination()
+        results = paginator.paginate_queryset(annotations, request)
+        serializer = serializers.AnnotationSerializerWithFilename(results, many=True)
         return paginator.get_paginated_response(serializer.data)
 
 
