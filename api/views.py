@@ -235,6 +235,7 @@ class GetAllAnnotationsByCurrentUserWithPagination(APIView):
         else:
             order = ''
 
+        # Adding 'filename' field to annotation object by taking the value of 'name' (key) in 'data' (json field)
         annotations = Annotation.objects.filter(user=request.user).annotate(
             filename=KeyTextTransform('name', 'data')).order_by(order + orderBy)
 
@@ -263,6 +264,21 @@ class ExportAnnotations(APIView):
         annotations = annotations.annotate(name=KeyTextTransform('name', 'data'))
 
         serializer = serializers.AnnotationSerializerForExporting(annotations, many=True)
+        return Response(serializer.data)
 
-        print(serializer.data)
+class DownloadAnnotationsById(APIView):
+    """Downloads annotations by ID"""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, id, format=None, **kwargs):
+        annotations = Annotation.objects.filter(user=request.user).filter(id=id)
+        # Adding fields to objects based upon json (see GetAllAnnotationsByCurrentUserWithPagination for in depth explantion)
+        annotations = annotations.annotate(Entities=KeyTransform('Entities', 'data'))
+        annotations = annotations.annotate(Sections=KeyTransform('Sections', 'data'))
+        annotations = annotations.annotate(Sentences=KeyTransform('Sentences', 'data'))
+        annotations = annotations.annotate(tagTemplates=KeyTransform('tagTemplates', 'data'))
+        annotations = annotations.annotate(name=KeyTextTransform('name', 'data'))
+
+        serializer = serializers.AnnotationSerializerForExporting(annotations, many=True)
         return Response(serializer.data)
