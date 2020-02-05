@@ -259,8 +259,9 @@ class GetAllAnnotationsWithPagination(APIView):
             order = ''
 
         # Adding 'filename' field to annotation object by taking the value of 'name' (key) in 'data' (json field)
-        annotations = Annotation.objects.all().annotate(
+        annotations = Annotation.objects.all().select_related('user').annotate(
             filename=KeyTextTransform('name', 'data')).order_by(order + orderBy)
+
         paginator = pagination.CustomPageNumberPagination()
         results = paginator.paginate_queryset(annotations, request)
         serializer = serializers.AnnotationSerializerWithFilename(results, many=True)

@@ -18,13 +18,17 @@ class AnnotationSerializer(serializers.ModelSerializer):
 
 class AnnotationSerializerWithFilename(serializers.ModelSerializer):
     filename = serializers.SerializerMethodField()
+    user = serializers.SerializerMethodField()
 
     def get_filename(self, obj):
         return obj.filename
 
+    def get_user(self, obj):
+        return obj.user.username
+
     class Meta:
         model = Annotation
-        fields = ("id", "filename", "updated")
+        fields = ("id", "filename", "updated", "user")
 
 
 class AnnotationSerializerForExporting(serializers.ModelSerializer):
