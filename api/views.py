@@ -206,21 +206,6 @@ class GetAnnotationsByFilenameUser(APIView):
         return Response(serializer.data)
 
 
-class GetLatestAnnotation(APIView):
-    """Request last updated annotation from backend that were previously saved by filename"""
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, filename, format=None, **kwargs):
-
-        annotations = Annotation.objects.filter(data__name=filename).order_by('-updated')
-        if len(annotations) > 0:
-
-            serializer = serializers.AnnotationSerializer(annotations[0], many=False)
-            return Response(serializer.data)
-        else:
-            return Response(status=404)
-
-
 class GetAllAnnotationsByCurrentUserWithPagination(APIView):
     """Request all annotations done for all files by the current user"""
 
