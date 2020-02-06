@@ -121,10 +121,9 @@ class UploadDoc(APIView):
         """Makes a serialized JSON string."""
         obj = {
             "filename": filename,
-            "Sections": sections,
             "Sentences": sentences,
             "Tokens": tokens,
-            "Entities": entities
+            "Entities": entities + sections
         }
         return obj
 
@@ -263,7 +262,6 @@ class ExportAnnotations(APIView):
         annotations = Annotation.objects.filter(user=request.user).filter(sessionId=sessionId)
         # Adding fields to objects based upon json (see GetAllAnnotationsByCurrentUserWithPagination for in depth explantion)
         annotations = annotations.annotate(Entities=KeyTransform('Entities', 'data'))
-        annotations = annotations.annotate(Sections=KeyTransform('Sections', 'data'))
         annotations = annotations.annotate(Sentences=KeyTransform('Sentences', 'data'))
         annotations = annotations.annotate(tagTemplates=KeyTransform('tagTemplates', 'data'))
         annotations = annotations.annotate(name=KeyTextTransform('name', 'data'))
@@ -280,7 +278,6 @@ class DownloadAnnotationsById(APIView):
         annotations = Annotation.objects.filter(user=request.user).filter(id=id)
         # Adding fields to objects based upon json (see GetAllAnnotationsByCurrentUserWithPagination for in depth explantion)
         annotations = annotations.annotate(Entities=KeyTransform('Entities', 'data'))
-        annotations = annotations.annotate(Sections=KeyTransform('Sections', 'data'))
         annotations = annotations.annotate(Sentences=KeyTransform('Sentences', 'data'))
         annotations = annotations.annotate(tagTemplates=KeyTransform('tagTemplates', 'data'))
         annotations = annotations.annotate(name=KeyTextTransform('name', 'data'))

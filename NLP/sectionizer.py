@@ -83,7 +83,7 @@ class Sectionizer:
         return root
 
     def _findSectionEndings(self,doc):
-        endingStrings = ['electronically signed by', 'authenticated signature applied', 'dictated by:', '\n___+\n']
+        endingStrings = ['electronically signed by', 'authenticated signature applied', 'dictated by:']
         sectionEndings = [] # characters where sections end
         for ending in endingStrings:
             for match in re.finditer(ending, doc.text.lower()):
