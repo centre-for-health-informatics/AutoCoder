@@ -153,7 +153,7 @@ class EntityMatchers:
         annotMatches = self._parseMatches(spacyMatches, doc, 'Logic')
         return annotMatches
 
-    def getIcdKeywordMatches(self, doc):
+    def getIcdKeywordMatches(self, doc, offset=0):
         '''Get list of ICD keyword matches from document.'''
         spacyMatches = self.icd_kw_matcher(doc)
 
@@ -165,8 +165,8 @@ class EntityMatchers:
             annotate_start_char = start_token.idx
             annotate_end_char = end_token.idx + len(end_token)
             text = doc.text[annotate_start_char:annotate_end_char]
-            outputMatches.append({"start": annotate_start_char, "end": annotate_end_char,
-                                  "text": text, "type": Labels.ICD_KEYWORD_LABEL})
+            outputMatches.append({"start": annotate_start_char + offset, "end": annotate_end_char +
+                                  offset, "text": text, "type": Labels.ICD_KEYWORD_LABEL})
 
         return outputMatches
 

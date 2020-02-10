@@ -82,12 +82,12 @@ class Sectionizer:
 
         return root
 
-    def _findSectionEndings(self,doc):
+    def _findSectionEndings(self, doc):
         endingStrings = ['electronically signed by', 'authenticated signature applied', 'dictated by:']
-        sectionEndings = [] # characters where sections end
+        sectionEndings = []  # characters where sections end
         for ending in endingStrings:
             for match in re.finditer(ending, doc.text.lower()):
-                sectionEndings.append(match.span()[0]) 
+                sectionEndings.append(match.span()[0])
         return sectionEndings
 
     def _getSectionsFromDoc(self, doc):
@@ -124,6 +124,7 @@ class Sectionizer:
 
         for i, section in enumerate(doc_sections):
             general_section = ''
+
             for key, value in self.sections.items():
                 if section[2].replace('*', '') in value or section[2].replace('*', '')[:-1] in value:
                     general_section = key
@@ -138,7 +139,8 @@ class Sectionizer:
                     if ending > section[0]:
                         end = ending
                         break
-                sec_dict['text_indicies'] = (section[0], min(doc_sections[i+1][0], end) if end else doc_sections[i+1][0])
+                sec_dict['text_indicies'] = (section[0], min(doc_sections[i+1][0], end)
+                                             if end else doc_sections[i+1][0])
             # for the last section
             else:
                 end = None

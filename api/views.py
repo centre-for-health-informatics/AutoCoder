@@ -109,12 +109,13 @@ class UploadDoc(APIView):
     def _processDoc(self, text):
         """Runs NLP to process document, returns document sections, sentences, tokens, and entities."""
 
-        results = UploadDoc.langProcessor.analyzeText(text)
+        results = UploadDoc.langProcessor.analyzeText(text, scope='sentence')
 
         entities = results['entities']
         sections = results['sections']
         sentences = results['sentences']
         tokens = results['tokens']
+
         return (sections, sentences, tokens, entities)
 
     def _makeJSON(self, filename, sections, sentences, tokens, entities):
@@ -268,6 +269,7 @@ class ExportAnnotations(APIView):
 
         serializer = serializers.AnnotationSerializerForExporting(annotations, many=True)
         return Response(serializer.data)
+
 
 class DownloadAnnotationsById(APIView):
     """Downloads annotations by ID"""

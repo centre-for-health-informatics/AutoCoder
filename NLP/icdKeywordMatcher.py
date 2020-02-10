@@ -55,21 +55,27 @@ class IcdKeywordMatcher:
 
         return knowledgeDictionaries
 
-    def getIcdAnnotations(self, keywordMatches):
+    def getIcdAnnotations(self, keywordMatches, **kwargs):
         '''
         Given a list of icd keyword matches found in a document that denotes positions of keywords within the string,
         Returns a list of annotations.
         Params:
-        - keywordMatches: a list of dictionaries describing position of tokens, dictionaries must have the key 'text' as required by self.getICDforTokens().
+            - keywordMatches: a list of dictionaries describing position of tokens, dictionaries must have the key 'text' as required by self.getICDforTokens().
+        kwargs: additional kwargs are added to the output dictionary as key-value pairs
         '''
 
         icdCodeTuples = self.getICDforTokens(keywordMatches)
+#         print("getIcdAnnotations called.")
+#         print(keywordMatches)
         ''' 
         list of tuples in the form such as the following
         ('I46.8',
           [{'start': 279, 'end': 285, 'text': 'arrest', 'type': 'ICD_KW'},
            {'start': 2850, 'end': 2857, 'text': 'cardiac', 'type': 'ICD_KW'}])
         '''
+        if not icdCodeTuples:
+            return []
+
         annotations = []
 
         for icdLabel, meta in icdCodeTuples:
@@ -79,7 +85,8 @@ class IcdKeywordMatcher:
                 annot = {"start": annotation['start'],
                          "end": annotation['end'],
                          "tag": icdLabel,
-                         "type": Labels.ICD_KEYWORD_LABEL
+                         "type": Labels.ICD_KEYWORD_LABEL,
+                         **kwargs
                          }
 
                 if i > 0:
@@ -89,6 +96,7 @@ class IcdKeywordMatcher:
                 prevAnnot = annot
                 annotations.append(annot)
 
+#         print(annotations)
         return annotations
 
     def getICDforTokens(self, searchTokens):
