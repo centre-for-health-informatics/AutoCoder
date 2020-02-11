@@ -143,7 +143,6 @@ class UploadAnnotation(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, format=None, **kwargs):
-        print(request.data)
         annotations = request.data.copy()
 
         self._cleanJSON(annotations)
