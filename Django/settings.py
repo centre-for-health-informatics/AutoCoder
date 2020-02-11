@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'oauth2_provider',
     'annotations',
+    'Django'
 ]
 
 AUTH_USER_MODEL = 'users.CustomUser'
