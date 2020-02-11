@@ -19,6 +19,9 @@ from django.contrib.auth.hashers import make_password
 from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
 from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
+import os
+
+ENABLE_LANGUAGE_PROCESSOR = os.environ['DJANGO_ENABLE_LANGUAGE_PROCESSOR'].lower() == "true"
 
 
 class IsAdmin(permissions.BasePermission):
@@ -95,16 +98,21 @@ class ValidateToken(APIView, permissions.BasePermission):
 class UploadDoc(APIView):
     """Uploads document for processing"""
     permission_classes = [permissions.IsAuthenticated]
-    langProcessor = LanguageProcessor()
+    if ENABLE_LANGUAGE_PROCESSOR:
+        langProcessor = LanguageProcessor()
 
     def post(self, request, format=None, **kwargs):
+
         doc = request.data
         docFilename = doc["filename"]
         docType = doc["format"]
         docText = doc["content"]
-        docSections, docSentences, docTokens, docEntities = self._processDoc(docText)
 
-        return Response(self._makeJSON(docFilename, docSections, docSentences, docTokens, docEntities))
+        if ENABLE_LANGUAGE_PROCESSOR:
+            docSections, docSentences, docTokens, docEntities = self._processDoc(docText)
+            return Response(self._makeJSON(docFilename, docSections, docSentences, docTokens, docEntities))
+        else:
+            return Response({"filename": docFilename, "Sentences": [], "Tokens": [], "Entities": []})
 
     def _processDoc(self, text):
         """Runs NLP to process document, returns document sections, sentences, tokens, and entities."""
@@ -135,6 +143,7 @@ class UploadAnnotation(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, format=None, **kwargs):
+        print(request.data)
         annotations = request.data.copy()
 
         self._cleanJSON(annotations)
@@ -160,7 +169,7 @@ class UploadAnnotation(APIView):
         allowed_keys = ['name', 'tagTemplates', 'Sections', 'Entities', 'Sentences', 'sessionId']
         allowed_tagTemplate_attr = ['id', 'description', 'color', 'type']
         allowed_section_attr = ['start', 'end', 'type', 'tag']
-        allowed_entity_attr = ['start', 'end', 'type', 'tag']
+        allowed_entity_attr = ['start', 'end', 'type', 'tag', 'next']
         allowed_sentence_attr = ['start', 'end', 'tag']
 
         # Check the first level keys of the JSON object and delete keys not allowed

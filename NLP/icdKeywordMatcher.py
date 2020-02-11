@@ -65,13 +65,13 @@ class IcdKeywordMatcher:
         '''
 
         icdCodeTuples = self.getICDforTokens(keywordMatches)
-#         print("getIcdAnnotations called.")
-#         print(keywordMatches)
         ''' 
         list of tuples in the form such as the following
-        ('I46.8',
+        [('I46.8',
           [{'start': 279, 'end': 285, 'text': 'arrest', 'type': 'ICD_KW'},
            {'start': 2850, 'end': 2857, 'text': 'cardiac', 'type': 'ICD_KW'}])
+           ...
+        ]
         '''
         if not icdCodeTuples:
             return []
@@ -79,6 +79,8 @@ class IcdKeywordMatcher:
         annotations = []
 
         for icdLabel, meta in icdCodeTuples:
+
+            meta.sort(key=lambda x: x['start'], reverse=False)
 
             for i, annotation in enumerate(meta):
 
@@ -96,7 +98,6 @@ class IcdKeywordMatcher:
                 prevAnnot = annot
                 annotations.append(annot)
 
-#         print(annotations)
         return annotations
 
     def getICDforTokens(self, searchTokens):
