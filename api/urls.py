@@ -13,5 +13,9 @@ urlpatterns = [
     path('getAnnotationsByFilenameUser/<str:filename>/',
          views.GetAnnotationsByFilenameUser.as_view(), name="get-annotations-filename-user"),
     path('exportAnnotations/<str:sessionId>/', views.ExportAnnotations.as_view(), name='export-annotations'),
-    path('downloadAnnotations/<str:id>/', views.DownloadAnnotationsById.as_view(), name='download-annotations')
+    path('downloadAnnotations/<str:id>/', views.DownloadAnnotationsById.as_view(), name='download-annotations'),
+
+    # ICD APIs
+    path('family/<str:inCode>/', views.Family.as_view(), name="family-of-code"),
+    path('ancestors/<str:inCode>/', views.ListAncestors.as_view(), name="ancestors-of-code"),
 ]

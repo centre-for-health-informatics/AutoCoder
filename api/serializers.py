@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from users.models import CustomUser
 from annotations.models import Annotation
+from annotations.models import TreeCode
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -52,3 +53,20 @@ class AnnotationSerializerForExporting(serializers.ModelSerializer):
     class Meta:
         model = Annotation
         fields = ('name', 'Entities', 'Sentences', 'tagTemplates')
+
+
+class TreeCodeSerializer(serializers.ModelSerializer):
+    hasChildren = serializers.SerializerMethodField()
+
+    def get_hasChildren(self, obj):
+        return obj.hasChildren
+
+    class Meta:
+        model = TreeCode
+        fields = ("code", "description", "hasChildren")
+
+
+class CodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TreeCode
+        fields = ("code", "description")

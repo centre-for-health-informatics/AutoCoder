@@ -20,6 +20,7 @@ from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
 from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
 import os
+from annotations.models import TreeCode
 
 ENABLE_LANGUAGE_PROCESSOR = os.environ['DJANGO_ENABLE_LANGUAGE_PROCESSOR'].lower() == "true"
 
@@ -294,3 +295,102 @@ class DownloadAnnotationsById(APIView):
 
         serializer = serializers.AnnotationSerializerForExporting(annotations, many=True)
         return Response(serializer.data)
+
+
+class Family(APIView):
+    """Returns the family of a code"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    # Get the children of the entered code
+    def get_children(self, inCode):
+        try:
+            childrenCodes = TreeCode.objects.get(code=inCode).children
+            childrenCodes = childrenCodes.split(",")
+            children = TreeCode.objects.filter(code__in=childrenCodes)
+            for child in children:
+                if child.children:
+                    child.hasChildren = True
+                else:
+                    child.hasChildren = False
+            return children
+        except ObjectDoesNotExist:
+            return TreeCode.objects.none()
+
+    # Get the siblings of the entered code
+    def get_siblings(self, inCode):
+        try:
+            if(TreeCode.objects.get(code=inCode).parent):
+                parent = TreeCode.objects.get(code=inCode).parent
+                siblingCodes = TreeCode.objects.get(
+                    code=parent).children.split(",")
+                siblings = TreeCode.objects.filter(code__in=siblingCodes)
+                for sibling in siblings:
+                    if sibling.children:
+                        sibling.hasChildren = True
+                    else:
+                        sibling.hasChildren = False
+                return siblings
+            else:
+                siblings = TreeCode.objects.filter(code=inCode)
+                for sibling in siblings:
+                    if sibling.children:
+                        sibling.hasChildren = True
+                    else:
+                        sibling.hasChildren = False
+                return siblings
+        except ObjectDoesNotExist:
+            return TreeCode.objects.none()
+
+    # Get self of code
+    def get_single(self, inCode):
+        try:
+            selfs = TreeCode.objects.get(code=inCode)
+            if selfs.children:
+                selfs.hasChildren = True
+            else:
+                selfs.hasChildren = False
+            return selfs
+        except ObjectDoesNotExist:
+            return None
+
+    # Uses above functions to get family and combine it all
+    def get(self, request, inCode, format=None, **kwargs):
+        selfs = self.get_single(inCode)
+        if selfs == None:
+            return Response({'self': None, 'parent': None, 'siblings': None, 'children': None})
+        parent = self.get_single(selfs.parent)
+        if(parent != None):
+            parent.hasChildren = True
+            parentSerializer = serializers.TreeCodeSerializer(parent, many=False)
+        children = self.get_children(inCode)
+        siblings = self.get_siblings(inCode)
+        selfSerializer = serializers.TreeCodeSerializer(selfs, many=False)
+        siblingSerializer = serializers.TreeCodeSerializer(siblings, many=True)
+        childrenSerializer = serializers.TreeCodeSerializer(children, many=True)
+
+        # Sending json
+        if parent:
+            return Response({'self': selfSerializer.data, 'parent': parentSerializer.data, 'siblings': siblingSerializer.data, 'children': childrenSerializer.data})
+        else:
+            return Response({'self': selfSerializer.data, 'parent': None, 'siblings': siblingSerializer.data, 'children': childrenSerializer.data})
+
+
+class ListAncestors(APIView):
+    """Lists the ancestors of a code. Used to generate the ancestry chain in the tree"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get_object(self, code):
+        ancestors = []
+        # Keeps adding ancestors until reaching the top, after which the list is returned
+        while True:
+            try:
+                ancestor = TreeCode.objects.get(code=code)
+                serializer = serializers.CodeSerializer(ancestor, many=False)
+                ancestors.append(serializer)
+                code = ancestor.parent
+            except ObjectDoesNotExist:
+                return ancestors
+
+    def get(self, request, inCode, format=None, **kwargs):
+        ancestors = self.get_object(inCode)
+        return Response([ancestor.data for ancestor in ancestors])       
