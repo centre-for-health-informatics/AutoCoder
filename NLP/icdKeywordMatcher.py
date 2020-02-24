@@ -68,8 +68,8 @@ class IcdKeywordMatcher:
         ''' 
         list of tuples in the form such as the following
         [('I46.8',
-          [{'start': 279, 'end': 285, 'text': 'arrest', 'type': 'ICD_KW'},
-           {'start': 2850, 'end': 2857, 'text': 'cardiac', 'type': 'ICD_KW'}])
+          [{'start': 279, 'end': 285, 'text': 'arrest', 'type': 'ICD Codes'},
+           {'start': 2850, 'end': 2857, 'text': 'cardiac', 'type': 'ICD Codes'}])
            ...
         ]
         '''

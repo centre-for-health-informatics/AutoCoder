@@ -20,7 +20,7 @@ from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
 from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
 import os
-from annotations.models import TreeCode
+from ICD.models import TreeCode
 
 ENABLE_LANGUAGE_PROCESSOR = os.environ['DJANGO_ENABLE_LANGUAGE_PROCESSOR'].lower() == "true"
 
@@ -394,3 +394,95 @@ class ListAncestors(APIView):
     def get(self, request, inCode, format=None, **kwargs):
         ancestors = self.get_object(inCode)
         return Response([ancestor.data for ancestor in ancestors])       
+
+
+class ListMatchingDescriptions(APIView):
+    """Used to match text that the user enters in the search box.
+    This is so that the user can enter part of the description instead of the code"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get_object(self, searchString):
+        # Only check if the length of the entered string is greater than or equal to 3
+        if len(searchString) < 3:
+            return Code.objects.none()
+        # Filters and returns
+        searchwords = searchString.lower().split(' ')
+        queryset = Code.objects.filter(description__icontains=searchwords[0])
+        # Filter down set to match remaining words
+        if len(searchwords) > 1:
+            for searchword in searchwords[1:]:
+                queryset = queryset.filter(description__icontains=searchword)
+        # return top 15 codes. shortest codes appear first, then secondary sort by the code
+        return queryset.order_by(Length('code').asc(), 'code')[:15]
+
+    def get(self, request, searchString, format=None, **kwargs):
+        codes = self.get_object(searchString)
+        serializer = serializers.CodeSerializer(codes, many=True)
+        return Response(serializer.data)
+
+
+class ListMatchingKeywords(APIView):
+    """Used to match keywords that the user enters in the search box.
+    This is so that the user can enter a keyword instead of the code"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get_object(self, searchString):
+        # Only check if the length of the entered string is greater than or equal to 3
+        if len(searchString) < 3:
+            return Code.objects.none()
+        # Get set matching first word
+        searchwords = searchString.lower().split(' ')
+        queryset = Code.objects.filter(keyword_terms__icontains=searchwords[0])
+        # Filter down set to match remaining words
+        if len(searchwords) > 1:
+            for searchword in searchwords[1:]:
+                queryset = queryset.filter(keyword_terms__icontains=searchword)
+        # return top 15 codes. shortest codes appear first, then secondary sort by the code
+        return queryset.order_by(Length('code').asc(), 'code')[:15]
+
+    def get(self, request, searchString, format=None, **kwargs):
+        codes = self.get_object(searchString)
+        serializer = serializers.CodeSerializer(codes, many=True)
+        return Response(serializer.data)
+
+
+class ListChildrenOfCode(APIView):
+    """Returns the children of a code"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get_object(self, inCode):
+        try:
+            # Takes the children of the code
+            childrenCodes = TreeCode.objects.get(code=inCode).children
+            # Turns the children into a list
+            childrenCodes = childrenCodes.split(",")
+            # Obtains the code objects for each object in the list
+            children = TreeCode.objects.filter(code__in=childrenCodes)
+            return children
+        except ObjectDoesNotExist:
+            return TreeCode.objects.none()
+
+    def get(self, request, inCode, format=None, **kwargs):
+        children = self.get_object(inCode)
+        serializer = serializers.CodeSerializer(children, many=True)
+        return Response(serializer.data)
+
+
+class ListCodeAutosuggestions(APIView):
+    """Returns codes based upon the text entered"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get(self, request, searchString, format=None, **kwargs):
+        descMatch = ListMatchingDescriptions()
+        keywordMatch = ListMatchingKeywords()
+        codeMatch = ListChildrenOfCode()
+
+        # Matches descriptions, keywords, or codes
+        matchesDesc = descMatch.get_object(searchString)
+        matchesKeyword = keywordMatch.get_object(searchString)
+        matchesCode = codeMatch.get_object(searchString)
+
+        serializerDesc = serializers.CodeSerializer(matchesDesc, many=True)
+        serializerKeyword = serializers.CodeSerializer(matchesKeyword, many=True)
+        serializerCode = serializers.CodeSerializer(matchesCode, many=True)
+        return Response({"description matches": serializerDesc.data, "code matches": serializerCode.data, "keyword matches": serializerKeyword.data})

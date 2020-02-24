@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
-from annotations.models import TreeCode
+from ICD.models import TreeCode
 from collections import defaultdict
 from django.db import transaction
 

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from users.models import CustomUser
 from annotations.models import Annotation
-from annotations.models import TreeCode
+from ICD.models import TreeCode
 
 
 class UserSerializer(serializers.ModelSerializer):
