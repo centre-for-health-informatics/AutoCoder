@@ -20,7 +20,7 @@ from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
 from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
 import os
-from ICD.models import TreeCode
+from ICD.models import TreeCode, Code
 
 ENABLE_LANGUAGE_PROCESSOR = os.environ['DJANGO_ENABLE_LANGUAGE_PROCESSOR'].lower() == "true"
 
@@ -453,14 +453,15 @@ class ListChildrenOfCode(APIView):
     def get_object(self, inCode):
         try:
             # Takes the children of the code
-            childrenCodes = TreeCode.objects.get(code=inCode).children
+            childrenCodes = Code.objects.get(code=inCode.upper()).children
             # Turns the children into a list
             childrenCodes = childrenCodes.split(",")
+            childrenCodes.append(inCode.upper()) # Adds self code
             # Obtains the code objects for each object in the list
-            children = TreeCode.objects.filter(code__in=childrenCodes)
+            children = Code.objects.filter(code__in=childrenCodes)
             return children
         except ObjectDoesNotExist:
-            return TreeCode.objects.none()
+            return Code.objects.none()
 
     def get(self, request, inCode, format=None, **kwargs):
         children = self.get_object(inCode)

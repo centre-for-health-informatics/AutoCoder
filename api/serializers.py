@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from users.models import CustomUser
 from annotations.models import Annotation
-from ICD.models import TreeCode
+from ICD.models import TreeCode, Code
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -68,5 +68,5 @@ class TreeCodeSerializer(serializers.ModelSerializer):
 
 class CodeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TreeCode
+        model = Code
         fields = ("code", "description")
