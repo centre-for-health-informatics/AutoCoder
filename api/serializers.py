@@ -33,7 +33,6 @@ class AnnotationSerializerWithFilename(serializers.ModelSerializer):
 
 class AnnotationSerializerForExporting(serializers.ModelSerializer):
     Entities = serializers.SerializerMethodField()
-    Sections = serializers.SerializerMethodField()
     Sentences = serializers.SerializerMethodField()
     tagTemplates = serializers.SerializerMethodField()
     name = serializers.SerializerMethodField()
@@ -44,9 +43,6 @@ class AnnotationSerializerForExporting(serializers.ModelSerializer):
     def get_Entities(self, obj):
         return obj.Entities
 
-    def get_Sections(self, obj):
-        return obj.Sections
-
     def get_Sentences(self, obj):
         return obj.Sentences
 
@@ -55,4 +51,4 @@ class AnnotationSerializerForExporting(serializers.ModelSerializer):
 
     class Meta:
         model = Annotation
-        fields = ('name', 'Entities', 'Sections', 'Sentences', 'tagTemplates')
+        fields = ('name', 'Entities', 'Sentences', 'tagTemplates')
