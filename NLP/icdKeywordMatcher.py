@@ -26,13 +26,12 @@ class IcdKeywordMatcher:
         knowledgeDictionaries = [segToIcd, levelOnePhraseToSeq, levelTwoSegToPhrases]
         keywordPhraseSet = set()
 
-        print("Creating search asset for IcdKeywordMatcher...")
-
         with open(path, mode='r') as file:
 
             csvReader = csv.reader(file, delimiter=',')
 
             for i, row in enumerate(csvReader):
+
                 if i == 0:
                     continue
 

@@ -124,7 +124,7 @@ class Sectionizer:
 
         for i, section in enumerate(doc_sections):
             general_section = ''
-
+            # TODO
             for key, value in self.sections.items():
                 if section[2].replace('*', '') in value or section[2].replace('*', '')[:-1] in value:
                     general_section = key
