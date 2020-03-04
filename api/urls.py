@@ -22,4 +22,5 @@ urlpatterns = [
     path('codeAutosuggestions/<str:searchString>/', views.ListCodeAutosuggestions.as_view(), name="code-autosuggestions"),
     path('matchDescription/<str:searchString>/', views.ListMatchingDescriptions.as_view(), name="match-description"),
     path('matchKeyword/<str:searchString>/', views.ListMatchingKeywords.as_view(), name="match-keyword"),
+    path('codeDescription/<str:inCode>/', views.SingleCodeDescription.as_view(), name="single-code"),
 ]
