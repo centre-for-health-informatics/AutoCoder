@@ -26,13 +26,12 @@ class IcdKeywordMatcher:
         knowledgeDictionaries = [segToIcd, levelOnePhraseToSeq, levelTwoSegToPhrases]
         keywordPhraseSet = set()
 
-        print("Creating search asset for IcdKeywordMatcher...")
-
         with open(path, mode='r') as file:
 
             csvReader = csv.reader(file, delimiter=',')
 
             for i, row in enumerate(csvReader):
+
                 if i == 0:
                     continue
 
@@ -68,8 +67,8 @@ class IcdKeywordMatcher:
         ''' 
         list of tuples in the form such as the following
         [('I46.8',
-          [{'start': 279, 'end': 285, 'text': 'arrest', 'type': 'ICD_KW'},
-           {'start': 2850, 'end': 2857, 'text': 'cardiac', 'type': 'ICD_KW'}])
+          [{'start': 279, 'end': 285, 'text': 'arrest', 'type': 'ICD Codes'},
+           {'start': 2850, 'end': 2857, 'text': 'cardiac', 'type': 'ICD Codes'}])
            ...
         ]
         '''

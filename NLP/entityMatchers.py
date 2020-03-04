@@ -3,10 +3,32 @@ from NLP.matcherPatterns import Labels, negation_forward_patterns, negation_back
 import csv
 
 
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end=printEnd)
+    # Print New Line on Complete
+    if iteration == total:
+        print()
+
+
 class EntityMatchers:
 
     def __init__(self, nlp, icdKeywordPhrases, **kwargs):
-        print("Initializing EntityMatcher...")
+        print("Initializing EntityMatchers...")
         self.negation_matcher = Matcher(nlp.vocab)
         self.closure_matcher = Matcher(nlp.vocab)
         self.icd_kw_matcher = PhraseMatcher(nlp.vocab)
@@ -19,10 +41,11 @@ class EntityMatchers:
     def _loadIcdKeywordPhrases(self, nlp, icdKeywordPhrases):
         '''Given a list of phrases, create PhraseMatcher patterns'''
         patterns = []
-        for phrase in icdKeywordPhrases:
+        total = len(icdKeywordPhrases)
+        for i, phrase in enumerate(icdKeywordPhrases):
             patterns.append(nlp(phrase))
+            printProgressBar(i+1, total, prefix='Loading keyword phrases:', suffix='Complete', length=10)
 
-        print("Finalizing PhraseMatcher...")
         self.icd_kw_matcher.add(Labels.ICD_KEYWORD_LABEL, None, *patterns)
 
     def _loadIcdKeywordFromFile(self, nlp, IcdKeywordFile):
@@ -154,7 +177,7 @@ class EntityMatchers:
         return annotMatches
 
     def getIcdKeywordMatches(self, doc, offset=0):
-        '''Get list of ICD keyword matches from document.'''
+        '''Get list of ICD keyword matches from document. Parameter offset is used to produce correct overall characrer positions when this method is used to process exerpts of the document.'''
         spacyMatches = self.icd_kw_matcher(doc)
 
         outputMatches = []
