@@ -80,4 +80,13 @@ class LanguageProcessor:
                 if len(icdEntitiesInSentence) > 0:
                     icdEntities += icdEntitiesInSentence
 
+        for icdEntity in icdEntities:
+            icdEntity["tag"] = icdEntity["tag"].replace(".","")
+            currentTag = icdEntity
+            while True:
+                try:
+                    currentTag = currentTag["next"]
+                    currentTag["tag"] = currentTag["tag"].replace(".","")
+                except:
+                    break
         return (icdEntities, icdKeywords)

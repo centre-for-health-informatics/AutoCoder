@@ -487,3 +487,17 @@ class ListCodeAutosuggestions(APIView):
         serializerKeyword = serializers.CodeSerializer(matchesKeyword, many=True)
         serializerCode = serializers.CodeSerializer(matchesCode, many=True)
         return Response({"description matches": serializerDesc.data, "code matches": serializerCode.data, "keyword matches": serializerKeyword.data})
+
+
+class SingleCodeDescription(APIView):
+    """Returns the description of a single code"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get(self, request, inCode, format=None, **kwargs):
+        try:
+            # Gets the code object
+            codeObject = Code.objects.get(code=inCode)
+        except ObjectDoesNotExist:
+            return Response({None})
+        serializer = serializers.CodeSerializer(codeObject, many=False)
+        return Response(serializer.data)
