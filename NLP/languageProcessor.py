@@ -80,6 +80,7 @@ class LanguageProcessor:
 
         for icdEntity in icdEntities:
             icdEntity["tag"] = icdEntity["tag"].replace(".","")
+            icdEntity["confirmed"] = False
             currentTag = icdEntity
             while True:
                 try:
