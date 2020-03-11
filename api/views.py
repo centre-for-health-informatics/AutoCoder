@@ -20,6 +20,7 @@ from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
 from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
 import os
+from ICD.models import TreeCode, Code
 
 ENABLE_LANGUAGE_PROCESSOR = os.environ['DJANGO_ENABLE_LANGUAGE_PROCESSOR'].lower() == "true"
 
@@ -294,4 +295,210 @@ class DownloadAnnotationsById(APIView):
         annotations = annotations.annotate(name=KeyTextTransform('name', 'data'))
 
         serializer = serializers.AnnotationSerializerForExporting(annotations, many=True)
+        return Response(serializer.data)
+
+
+class Family(APIView):
+    """Returns the family of a code"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    # Get the children of the entered code
+    def get_children(self, inCode):
+        try:
+            childrenCodes = TreeCode.objects.get(code=inCode).children
+            childrenCodes = childrenCodes.split(",")
+            children = TreeCode.objects.filter(code__in=childrenCodes)
+            for child in children:
+                if child.children:
+                    child.hasChildren = True
+                else:
+                    child.hasChildren = False
+            return children
+        except ObjectDoesNotExist:
+            return TreeCode.objects.none()
+
+    # Get the siblings of the entered code
+    def get_siblings(self, inCode):
+        try:
+            if(TreeCode.objects.get(code=inCode).parent):
+                parent = TreeCode.objects.get(code=inCode).parent
+                siblingCodes = TreeCode.objects.get(
+                    code=parent).children.split(",")
+                siblings = TreeCode.objects.filter(code__in=siblingCodes)
+                for sibling in siblings:
+                    if sibling.children:
+                        sibling.hasChildren = True
+                    else:
+                        sibling.hasChildren = False
+                return siblings
+            else:
+                siblings = TreeCode.objects.filter(code=inCode)
+                for sibling in siblings:
+                    if sibling.children:
+                        sibling.hasChildren = True
+                    else:
+                        sibling.hasChildren = False
+                return siblings
+        except ObjectDoesNotExist:
+            return TreeCode.objects.none()
+
+    # Get self of code
+    def get_single(self, inCode):
+        try:
+            selfs = TreeCode.objects.get(code=inCode)
+            if selfs.children:
+                selfs.hasChildren = True
+            else:
+                selfs.hasChildren = False
+            return selfs
+        except ObjectDoesNotExist:
+            return None
+
+    # Uses above functions to get family and combine it all
+    def get(self, request, inCode, format=None, **kwargs):
+        selfs = self.get_single(inCode)
+        if selfs == None:
+            return Response({'self': None, 'parent': None, 'siblings': None, 'children': None})
+        parent = self.get_single(selfs.parent)
+        if(parent != None):
+            parent.hasChildren = True
+            parentSerializer = serializers.TreeCodeSerializer(parent, many=False)
+        children = self.get_children(inCode)
+        siblings = self.get_siblings(inCode)
+        selfSerializer = serializers.TreeCodeSerializer(selfs, many=False)
+        siblingSerializer = serializers.TreeCodeSerializer(siblings, many=True)
+        childrenSerializer = serializers.TreeCodeSerializer(children, many=True)
+
+        # Sending json
+        if parent:
+            return Response({'self': selfSerializer.data, 'parent': parentSerializer.data, 'siblings': siblingSerializer.data, 'children': childrenSerializer.data})
+        else:
+            return Response({'self': selfSerializer.data, 'parent': None, 'siblings': siblingSerializer.data, 'children': childrenSerializer.data})
+
+
+class ListAncestors(APIView):
+    """Lists the ancestors of a code. Used to generate the ancestry chain in the tree"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get_object(self, code):
+        ancestors = []
+        # Keeps adding ancestors until reaching the top, after which the list is returned
+        while True:
+            try:
+                ancestor = TreeCode.objects.get(code=code)
+                serializer = serializers.CodeSerializer(ancestor, many=False)
+                ancestors.append(serializer)
+                code = ancestor.parent
+            except ObjectDoesNotExist:
+                return ancestors
+
+    def get(self, request, inCode, format=None, **kwargs):
+        ancestors = self.get_object(inCode)
+        return Response([ancestor.data for ancestor in ancestors])       
+
+
+class ListMatchingDescriptions(APIView):
+    """Used to match text that the user enters in the search box.
+    This is so that the user can enter part of the description instead of the code"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get_object(self, searchString):
+        # Only check if the length of the entered string is greater than or equal to 3
+        if len(searchString) < 3:
+            return Code.objects.none()
+        # Filters and returns
+        searchwords = searchString.lower().split(' ')
+        queryset = Code.objects.filter(description__icontains=searchwords[0])
+        # Filter down set to match remaining words
+        if len(searchwords) > 1:
+            for searchword in searchwords[1:]:
+                queryset = queryset.filter(description__icontains=searchword)
+        # return top 15 codes. shortest codes appear first, then secondary sort by the code
+        return queryset.order_by(Length('code').asc(), 'code')[:15]
+
+    def get(self, request, searchString, format=None, **kwargs):
+        codes = self.get_object(searchString)
+        serializer = serializers.CodeSerializer(codes, many=True)
+        return Response(serializer.data)
+
+
+class ListMatchingKeywords(APIView):
+    """Used to match keywords that the user enters in the search box.
+    This is so that the user can enter a keyword instead of the code"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get_object(self, searchString):
+        # Only check if the length of the entered string is greater than or equal to 3
+        if len(searchString) < 3:
+            return Code.objects.none()
+        # Get set matching first word
+        searchwords = searchString.lower().split(' ')
+        queryset = Code.objects.filter(keyword_terms__icontains=searchwords[0])
+        # Filter down set to match remaining words
+        if len(searchwords) > 1:
+            for searchword in searchwords[1:]:
+                queryset = queryset.filter(keyword_terms__icontains=searchword)
+        # return top 15 codes. shortest codes appear first, then secondary sort by the code
+        return queryset.order_by(Length('code').asc(), 'code')[:15]
+
+    def get(self, request, searchString, format=None, **kwargs):
+        codes = self.get_object(searchString)
+        serializer = serializers.CodeSerializer(codes, many=True)
+        return Response(serializer.data)
+
+
+class ListChildrenOfCode(APIView):
+    """Returns the children of a code"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get_object(self, inCode):
+        try:
+            # Takes the children of the code
+            childrenCodes = Code.objects.get(code=inCode.upper()).children
+            # Turns the children into a list
+            childrenCodes = childrenCodes.split(",")
+            childrenCodes.append(inCode.upper()) # Adds self code
+            # Obtains the code objects for each object in the list
+            children = Code.objects.filter(code__in=childrenCodes)
+            return children
+        except ObjectDoesNotExist:
+            return Code.objects.none()
+
+    def get(self, request, inCode, format=None, **kwargs):
+        children = self.get_object(inCode)
+        serializer = serializers.CodeSerializer(children, many=True)
+        return Response(serializer.data)
+
+
+class ListCodeAutosuggestions(APIView):
+    """Returns codes based upon the text entered"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get(self, request, searchString, format=None, **kwargs):
+        descMatch = ListMatchingDescriptions()
+        keywordMatch = ListMatchingKeywords()
+        codeMatch = ListChildrenOfCode()
+
+        # Matches descriptions, keywords, or codes
+        matchesDesc = descMatch.get_object(searchString)
+        matchesKeyword = keywordMatch.get_object(searchString)
+        matchesCode = codeMatch.get_object(searchString)
+
+        serializerDesc = serializers.CodeSerializer(matchesDesc, many=True)
+        serializerKeyword = serializers.CodeSerializer(matchesKeyword, many=True)
+        serializerCode = serializers.CodeSerializer(matchesCode, many=True)
+        return Response({"description matches": serializerDesc.data, "code matches": serializerCode.data, "keyword matches": serializerKeyword.data})
+
+
+class SingleCodeDescription(APIView):
+    """Returns the description of a single code"""
+    permission_classes = [permissions.IsAuthenticated, IsAdmin | IsCoder]
+
+    def get(self, request, inCode, format=None, **kwargs):
+        try:
+            # Gets the code object
+            codeObject = Code.objects.get(code=inCode)
+        except ObjectDoesNotExist:
+            return Response({None})
+        serializer = serializers.CodeSerializer(codeObject, many=False)
         return Response(serializer.data)

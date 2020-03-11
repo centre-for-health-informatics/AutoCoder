@@ -13,7 +13,7 @@ DEBUG = (os.environ['DJANGO_DEBUG'].lower() == 'true')
 if DEBUG:
     print("WARNING: Using development settings")
     CORS_ORIGIN_ALLOW_ALL = True
-    ALLOWED_HOSTS = [os.environ['DJANGO_HOST_ADDRESS']]
+    ALLOWED_HOSTS = [os.environ['DJANGO_HOST_ADDRESS'], 'localhost']
 
 else:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'oauth2_provider',
     'annotations',
-    'Django'
+    'Django',
+    'ICD'
 ]
 
 AUTH_USER_MODEL = 'users.CustomUser'
