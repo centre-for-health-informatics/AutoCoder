@@ -78,4 +78,19 @@ class LanguageProcessor:
             if len(icdEntitiesInPart) > 0:
                 icdEntities += icdEntitiesInPart
 
+        self._formatIcdEntities(icdEntities)
+
         return (icdEntities, icdKeywords)
+
+    def _formatIcdEntities(self, icdEntities):
+        '''Remove dots from ICD codes, add additional tags.'''
+        for icdEntity in icdEntities:
+            icdEntity["tag"] = icdEntity["tag"].replace(".", "")
+            icdEntity["confirmed"] = False
+            currentTag = icdEntity
+            while True:
+                try:
+                    currentTag = currentTag["next"]
+                    currentTag["tag"] = currentTag["tag"].replace(".", "")
+                except:
+                    break
