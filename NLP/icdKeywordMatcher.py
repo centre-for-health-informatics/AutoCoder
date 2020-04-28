@@ -1,6 +1,7 @@
+from NLP.matcherPatterns import Labels
 from collections import defaultdict
 import csv
-from NLP.matcherPatterns import Labels
+import copy
 
 
 class IcdKeywordMatcher:
@@ -54,7 +55,23 @@ class IcdKeywordMatcher:
 
         return knowledgeDictionaries
 
-    def getIcdAnnotations(self, keywordMatches, **kwargs):
+    def _handleNormalizedPhrases(self, keywordMatches):
+
+        output = []
+
+        for kw in keywordMatches:
+
+            if 'text' in kw:
+                output.append(kw)
+
+            if 'normalizedTo' in kw:
+                newKw = copy.deepcopy(kw)
+                newKw['text'] = newKw['normalizedTo']
+                output.append(newKw)
+
+        return output
+
+    def getIcdAnnotations(self, keywordMatches, phraseNorm, **kwargs):
         '''
         Given a list of icd keyword matches found in a document that denotes positions of keywords within the string,
         Returns a list of annotations.
@@ -62,6 +79,9 @@ class IcdKeywordMatcher:
             - keywordMatches: a list of dictionaries describing position of tokens, dictionaries must have the key 'text' as required by self.getICDforTokens().
         kwargs: additional kwargs are added to the output dictionary as key-value pairs
         '''
+
+        if phraseNorm:
+            keywordMatches = self._handleNormalizedPhrases(keywordMatches)
 
         icdCodeTuples = self.getICDforTokens(keywordMatches)
         ''' 
@@ -72,6 +92,7 @@ class IcdKeywordMatcher:
            ...
         ]
         '''
+
         if not icdCodeTuples:
             return []
 
@@ -103,7 +124,6 @@ class IcdKeywordMatcher:
         '''
         Params:
         - a list of search tokens, such as words from a single sentence. This could be a string, or a dictionary containing the key 'text' that maps to a string.
-        - a reference to search Asset (as from createSearchAsset()). searchAsset is a list [{seq_id: icd_code}, {level_one_phrase: [seq_id]}, {seg_id: [level_two_phrases]}, {seg_id: [level_three_phrase]}, ...]
         Returns:
         - a list of tuples, where the first element of the tuple is an icd code and the second element is a list of tokens that triggered the icd code.
         '''
@@ -116,7 +136,7 @@ class IcdKeywordMatcher:
         for searchToken in searchTokens:
 
             # If searchToken is a string, it is the search term,
-            # otherwise if a dictionary is passed, it should have a key 'text' that contains the search string
+            # otherwise if a dictionary is passed, it should have a key 'text'/'normalizedTo' that maps to the search term (str)
             if type(searchToken) == str:
                 searchTerm = searchToken
 
@@ -143,8 +163,6 @@ class IcdKeywordMatcher:
                         matched_terms.remove('FINAL_LEVEL_REACHED')
                         valid_seq_tuples.append((seq_id, matched_terms))
 
-    #     print(valid_seq_tuples)
-
         icd_codes = []
 
         for seq_id_tuple in valid_seq_tuples:
@@ -152,8 +170,6 @@ class IcdKeywordMatcher:
             seq_id, token = seq_id_tuple
 
             icd_codes.append((self.searchAsset[0][seq_id], token))
-
-    #     print(icd_codes)
 
         return icd_codes
 
@@ -196,7 +212,7 @@ class IcdKeywordMatcher:
 
             if type(token) == str:
                 searchTerm = token
-            else:
+            elif type(token) == dict and 'text' in token:
                 searchTerm = token['text']
 
             if searchTerm in levelPhrases:

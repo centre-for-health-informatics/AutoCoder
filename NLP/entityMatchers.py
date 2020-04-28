@@ -1,37 +1,16 @@
 from spacy.matcher import Matcher, PhraseMatcher
 from NLP.matcherPatterns import Labels, negation_forward_patterns, negation_backward_patterns, negation_bidirection_patterns, closure_patterns
 import csv
-
-
-def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end=printEnd)
-    # Print New Line on Complete
-    if iteration == total:
-        print()
+from Utility.progress import printProgressBar
 
 
 class EntityMatchers:
 
     def __init__(self, nlp, icdKeywordPhrases, **kwargs):
         print("Initializing EntityMatchers...")
-        self.negation_matcher = Matcher(nlp.vocab)
-        self.closure_matcher = Matcher(nlp.vocab)
-        self.icd_kw_matcher = PhraseMatcher(nlp.vocab)
+        self.negationMatcher = Matcher(nlp.vocab)
+        self.closureMatcher = Matcher(nlp.vocab)
+        self.icdKwMatcher = PhraseMatcher(nlp.vocab)
 
         # self._addNegationPatternFromFile()
         self._buildMatchers()
@@ -44,9 +23,9 @@ class EntityMatchers:
         total = len(icdKeywordPhrases)
         for i, phrase in enumerate(icdKeywordPhrases):
             patterns.append(nlp(phrase))
-            printProgressBar(i+1, total, prefix='Loading keyword phrases:', suffix='Complete', length=10)
+            printProgressBar(i+1, total, prefix='Loading keyword phrases:', suffix='Complete', length=5)
 
-        self.icd_kw_matcher.add(Labels.ICD_KEYWORD_LABEL, None, *patterns)
+        self.icdKwMatcher.add(Labels.ICD_KEYWORD_LABEL, None, *patterns)
 
     def _loadIcdKeywordFromFile(self, nlp, IcdKeywordFile):
         '''Function for loading Icd keyword phrases from file, and create PhraseMatcher patterns'''
@@ -57,12 +36,12 @@ class EntityMatchers:
             for phrase in phrases:
                 patterns.append(nlp(phrase))
 
-            self.icd_kw_matcher.add(Labels.ICD_KEYWORD_LABEL, None, *patterns)
+            self.icdKwMatchericdKwMatcher.add(Labels.ICD_KEYWORD_LABEL, None, *patterns)
 
     def _addNegationPatternFromFile(self):
-        '''Function for loading negation matcher terms from file to negation_matcher.'''
+        '''Function for loading negation matcher terms from file to negationMatcher.'''
 
-        matcher_terms = self._loadNegationTermsFromFile("NLP/secrets/neg_list_complete.txt")
+        matcher_terms = self._loadNegationTermsFromFile("NLP/neg_list_complete.txt")
 
         for matcher_item in matcher_terms:
             phrase_string = matcher_item['phrases']   # ie: "[{'LOWER': 'negative'},{'LOWER': 'for'}]"
@@ -70,7 +49,7 @@ class EntityMatchers:
             neg_dir = matcher_item['direction']
             matcher_label = self._mapMatcherLabels(matcher_category, neg_dir)
             code_string = eval(self._createMatchPattern(phrase_string))
-            self.negation_matcher.add(matcher_label, None, code_string)
+            self.negationMatcher.add(matcher_label, None, code_string)
 
     def _loadNegationTermsFromFile(self, path):
         '''Helper function to load negation terms from file, 
@@ -142,10 +121,10 @@ class EntityMatchers:
         return cat_label + '_' + dir_label
 
     def _buildMatchers(self):
-        self.negation_matcher.add(Labels.NEGATION_FORWARD_LABEL, None, *negation_forward_patterns)
-        self.negation_matcher.add(Labels.NEGATION_BACKWARD_LABEL, None, *negation_backward_patterns)
-        self.negation_matcher.add(Labels.NEGATION_BIDIRECTION_LABEL, None, *negation_bidirection_patterns)
-        self.closure_matcher.add(Labels.CLOSURE_BUT_LABEL, None, *closure_patterns)
+        self.negationMatcher.add(Labels.NEGATION_FORWARD_LABEL, None, *negation_forward_patterns)
+        self.negationMatcher.add(Labels.NEGATION_BACKWARD_LABEL, None, *negation_backward_patterns)
+        self.negationMatcher.add(Labels.NEGATION_BIDIRECTION_LABEL, None, *negation_bidirection_patterns)
+        self.closureMatcher.add(Labels.CLOSURE_BUT_LABEL, None, *closure_patterns)
 
     def _parseMatches(self, matchList, doc, tagType):
         '''Helper function that parse the list of matches as output from Spacy, and returns a list of matches using our annotation notations.'''
@@ -164,21 +143,21 @@ class EntityMatchers:
 
     def getNegationMatches(self, doc):
         '''Returns list of dictionary containing: start char #, end char #, label, type'''
-        spacyMatches = self.negation_matcher(
+        spacyMatches = self.negationMatcher(
             doc)  # list of tuples describing matches in format of (match_id, start_token_#, end_token_#)
         annotMatches = self._parseMatches(spacyMatches, doc, 'Logic')
         return annotMatches
 
     def getClosureMatches(self, doc):
         '''Returns list of dictionary containing: start char #, end char #, label, type'''
-        spacyMatches = self.closure_matcher(
+        spacyMatches = self.closureMatcher(
             doc)  # list of tuples describing matches in format of (match_id, start_token_#, end_token_#)
         annotMatches = self._parseMatches(spacyMatches, doc, 'Logic')
         return annotMatches
 
-    def getIcdKeywordMatches(self, doc, offset=0):
-        '''Get list of ICD keyword matches from document. Parameter offset is used to produce correct overall characrer positions when this method is used to process exerpts of the document.'''
-        spacyMatches = self.icd_kw_matcher(doc)
+    def getIcdKeywordMatches(self, doc, normalizedPhrases, offset=0):
+        '''Get list of ICD keyword matches from document. Parameter offset is used to produce correct overall characrer positions when this method is used to process exerpts of the document in parts.'''
+        spacyMatches = self.icdKwMatcher(doc)
 
         outputMatches = []
 
@@ -191,8 +170,43 @@ class EntityMatchers:
             outputMatches.append({"start": annotate_start_char + offset, "end": annotate_end_char +
                                   offset, "text": text, "type": Labels.ICD_KEYWORD_LABEL})
 
+        if normalizedPhrases:  # normalizedPhrases is not None, combine outputMatches with normalizedPhrases
+
+            return self.combineReplaceNormalizedPhrases(normalizedPhrases, outputMatches)
+
         return outputMatches
 
-    def getLogicMatchesForAnnotation(self, doc):
+    def combineReplaceNormalizedPhrases(self, normPhrases, phrases):
+        '''
+        Given list of normalized phrases and keyword matched phrases, combine into one list.
+        This method makes sure the combined output list has unique spans from both normPhrases and phrases. 
+        Any span from normPhrases will have both the 'normalizedTo' and 'text' keys.
+        '''
+
+        combinedOutput = []
+
+        for phrase in phrases:
+
+             # look for text span from the list of normPhrases, with identical start and end character positions
+            sameSpan = next((x for x in normPhrases if x['start'] ==
+                             phrase['start'] and x['end'] == phrase['end']), None)
+
+            if sameSpan:  # add key to the phrase, copy value from normPhrase with same span
+                phrase['normalizedTo'] = sameSpan['normalizedTo']
+
+            combinedOutput.append(phrase)
+
+        for normPhrase in normPhrases:
+             # look for text span from the list of phrases, with identical start and end character positions
+            sameSpan = next((x for x in phrases if x['start'] ==
+                             normPhrase['start'] and x['end'] == normPhrase['end']), None)
+
+            if sameSpan is None:
+                normPhrase['type'] = Labels.ICD_KEYWORD_LABEL
+                combinedOutput.append(normPhrase)
+
+        return combinedOutput
+
+    def getLogics(self, doc):
 
         return [*self.getNegationMatches(doc), *self.getClosureMatches(doc)]
