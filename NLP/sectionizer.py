@@ -13,9 +13,9 @@ class Sectionizer:
     def _loadPatternsFromFile(self, patternFile):
         if patternFile.lower().endswith('.csv'):
             self._makeJSONfromCSV(patternFile)
-            self.sections_regex, self.sections = self._loadSectionPatternsFromCSV(patternFile)
+            self.sectionsRegex, self.sections = self._loadSectionPatternsFromCSV(patternFile)
         elif patternFile.lower().endswith('json'):
-            self.sections_regex, self.sections = self._loadSectionPatternsFromJSON(patternFile)
+            self.sectionsRegex, self.sections = self._loadSectionPatternsFromJSON(patternFile)
 
     def _loadSectionPatternsFromJSON(self, patternFile):
         expressions = set()
@@ -95,7 +95,7 @@ class Sectionizer:
 
         doc_sections = []  # list of sections in format of (start_char, end_char, section_header_in_doc)
 
-        for expression in self.sections_regex:
+        for expression in self.sectionsRegex:
             for match in re.finditer(expression, doc.text.lower()):
                 start, end = match.span()
                 section = doc.text.lower()[start+1:end-1]
@@ -124,7 +124,7 @@ class Sectionizer:
 
         for i, section in enumerate(doc_sections):
             general_section = ''
-            # TODO
+
             for key, value in self.sections.items():
                 if section[2].replace('*', '') in value or section[2].replace('*', '')[:-1] in value:
                     general_section = key
@@ -153,7 +153,7 @@ class Sectionizer:
             document.append(sec_dict)
         return document
 
-    def getSectionsForAnnotation(self, doc):
+    def getSections(self, doc):
         '''Returns a list of sections to be annotated.'''
         sections = self._sectionizeDoc(doc)
         sections_annotate = []

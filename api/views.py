@@ -118,7 +118,7 @@ class UploadDoc(APIView):
         """Runs NLP to process document, returns document sections, sentences, tokens, and entities."""
 
         results = UploadDoc.langProcessor.analyzeText(
-            text, scope='section', removeNested=True, maxSentDist=1, sectionsIgnored=['fam_hist'])
+            text, scope='section', removeNested=True, maxSentDist=2, sectionsIgnored=['fam_hist'], phraseNorm=True)
 
         entities = results['entities']
         sections = results['sections']

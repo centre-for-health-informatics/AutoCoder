@@ -4,6 +4,7 @@ from intervaltree import Interval, IntervalTree
 class EntityPostProcessor:
     '''
     Pipeline for post-processing of matched entities. Must instantiate when a client thread connects to ensure data independence between clients.
+    Main purpose of this class is to clean up redundant entity match results, such as nested ICD code results, assign sentence distance rules, negate results, etc.
     '''
 
     def __init__(self, sections, sentences, entities, entityType):
