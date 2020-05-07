@@ -19,9 +19,7 @@ from django.contrib.auth.hashers import make_password
 from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
 from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
-import os
-
-ENABLE_LANGUAGE_PROCESSOR = os.environ['DJANGO_ENABLE_LANGUAGE_PROCESSOR'].lower() == "true"
+from django.conf import settings
 
 
 class IsAdmin(permissions.BasePermission):
@@ -98,7 +96,8 @@ class ValidateToken(APIView, permissions.BasePermission):
 class UploadDoc(APIView):
     """Uploads document for processing"""
     permission_classes = [permissions.IsAuthenticated]
-    if ENABLE_LANGUAGE_PROCESSOR:
+
+    if settings.ENABLE_NLP:
         langProcessor = LanguageProcessor()
 
     def post(self, request, format=None, **kwargs):
@@ -108,7 +107,7 @@ class UploadDoc(APIView):
         docType = doc["format"]
         docText = doc["content"]
 
-        if ENABLE_LANGUAGE_PROCESSOR:
+        if settings.ENABLE_NLP:
             docSections, docSentences, docTokens, docEntities = self._processDoc(docText)
             return Response(self._makeJSON(docFilename, docSections, docSentences, docTokens, docEntities))
         else:
