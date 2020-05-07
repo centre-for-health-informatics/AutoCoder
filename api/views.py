@@ -19,10 +19,8 @@ from django.contrib.auth.hashers import make_password
 from annotations.models import Annotation
 from NLP.languageProcessor import LanguageProcessor
 from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
-import os
 from ICD.models import TreeCode, Code
-
-ENABLE_LANGUAGE_PROCESSOR = os.environ['DJANGO_ENABLE_LANGUAGE_PROCESSOR'].lower() == "true"
+from django.conf import settings
 
 
 class IsAdmin(permissions.BasePermission):
@@ -99,7 +97,8 @@ class ValidateToken(APIView, permissions.BasePermission):
 class UploadDoc(APIView):
     """Uploads document for processing"""
     permission_classes = [permissions.IsAuthenticated]
-    if ENABLE_LANGUAGE_PROCESSOR:
+
+    if settings.ENABLE_NLP:
         langProcessor = LanguageProcessor()
 
     def post(self, request, format=None, **kwargs):
@@ -109,7 +108,7 @@ class UploadDoc(APIView):
         docType = doc["format"]
         docText = doc["content"]
 
-        if ENABLE_LANGUAGE_PROCESSOR:
+        if settings.ENABLE_NLP:
             docSections, docSentences, docTokens, docEntities = self._processDoc(docText)
             return Response(self._makeJSON(docFilename, docSections, docSentences, docTokens, docEntities))
         else:
@@ -394,7 +393,7 @@ class ListAncestors(APIView):
 
     def get(self, request, inCode, format=None, **kwargs):
         ancestors = self.get_object(inCode)
-        return Response([ancestor.data for ancestor in ancestors])       
+        return Response([ancestor.data for ancestor in ancestors])
 
 
 class ListMatchingDescriptions(APIView):
@@ -457,7 +456,7 @@ class ListChildrenOfCode(APIView):
             childrenCodes = Code.objects.get(code=inCode.upper()).children
             # Turns the children into a list
             childrenCodes = childrenCodes.split(",")
-            childrenCodes.append(inCode.upper()) # Adds self code
+            childrenCodes.append(inCode.upper())  # Adds self code
             # Obtains the code objects for each object in the list
             children = Code.objects.filter(code__in=childrenCodes)
             return children

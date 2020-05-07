@@ -8,19 +8,31 @@ from NLP.entityPostProcessor import EntityPostProcessor
 from NLP.matcherPatterns import Labels
 from NLP.phraseNormalizer import PhraseNormalizer
 import spacy
+from django.conf import settings
 
 
 class LanguageProcessor:
     def __init__(self):
         print("Initializing LanguageProcessor...")
         self.nlp = spacy.load('en_core_web_lg')
-        self.phraseNormalizer = PhraseNormalizer(
-            self.nlp, "NLP/Normalization_terms.csv", "NLP/UMLS_terms_normalized.csv")
-        self.icdKwMatcher = IcdKeywordMatcher("NLP/icd_10_cm_index_clean.csv")
-        self.sectionizer = Sectionizer("NLP/sections.csv")
-        self.entityMatcher = EntityMatchers(self.nlp, self.icdKwMatcher.keywordPhrases)
-        self.sentencizer = Sentencizer(self.nlp)
-        self.tokenizer = CustomTokenizer(self.nlp)
+        if settings.ENABLE_PHRASENORMALIZER:
+            self.phraseNormalizer = PhraseNormalizer(
+                self.nlp, "NLP/Normalization_terms.csv", "NLP/UMLS_terms_normalized.csv")
+
+        if settings.ENABLE_ENTITYMATCHER:
+            self.icdKwMatcher = IcdKeywordMatcher("NLP/icd_10_cm_index_clean.csv")
+
+        if settings.ENABLE_SECTIONIZER:
+            self.sectionizer = Sectionizer("NLP/sections.csv")
+
+        if settings.ENABLE_ENTITYMATCHER:
+            self.entityMatcher = EntityMatchers(self.nlp, self.icdKwMatcher.keywordPhrases)
+
+        if settings.ENABLE_SENTENCIZER:
+            self.sentencizer = Sentencizer(self.nlp)
+
+        if settings.ENABLE_TOKENIZER:
+            self.tokenizer = CustomTokenizer(self.nlp)
         print("LanguageProcessor ready.")
 
     def analyzeText(self, text, scope='document', removeNested=True, maxSentDist=3, sectionsIgnored=[], phraseNorm=True):
@@ -35,19 +47,34 @@ class LanguageProcessor:
         - phraseNorm: phrase normalization flag default to True.
         '''
         doc = self.nlp(text)
-        sections = self.sectionizer.getSections(doc)
-        logicEntities = self.entityMatcher.getLogics(doc)
-        sentences = self.sentencizer.getSentences(doc)
-        tokens = self.tokenizer.getTokens(doc)
 
-        icdEntities = self._icdKeywordMatchStrategy(
-            doc, sections, sentences, scope, removeNested, maxSentDist, sectionsIgnored, phraseNorm)
+        results = {'entities': [],
+                   'sections': [],
+                   'sentences': [],
+                   'tokens': []
+                   }
 
-        return {'entities': [*logicEntities, *icdEntities],
-                'sections': sections,
-                'sentences': sentences,
-                'tokens': tokens
-                }
+        if settings.ENABLE_SECTIONIZER:
+            sections = self.sectionizer.getSections(doc)
+            results['sections'] = sections
+
+        if settings.ENABLE_ENTITYMATCHER:
+            logicEntities = self.entityMatcher.getLogics(doc)
+
+        if settings.ENABLE_SENTENCIZER:
+            sentences = self.sentencizer.getSentences(doc)
+            results['sentences'] = sentences
+
+        if settings.ENABLE_TOKENIZER:
+            tokens = self.tokenizer.getTokens(doc)
+            results['tokens'] = tokens
+
+        if settings.ENABLE_ENTITYMATCHER:
+            icdEntities = self._icdKeywordMatchStrategy(
+                doc, sections, sentences, scope, removeNested, maxSentDist, sectionsIgnored, settings.ENABLE_PHRASENORMALIZER)
+            results['entities'] = [*logicEntities, *icdEntities]
+
+        return results
 
     def _icdKeywordMatchStrategy(self, doc, sections, sentences, scope, removeNested, maxSentDist, sectionsIgnored, phraseNorm):
         '''
