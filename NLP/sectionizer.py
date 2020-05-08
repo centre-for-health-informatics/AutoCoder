@@ -13,9 +13,9 @@ class Sectionizer:
     def _loadPatternsFromFile(self, patternFile):
         if patternFile.lower().endswith('.csv'):
             self._makeJSONfromCSV(patternFile)
-            self.sections_regex, self.sections = self._loadSectionPatternsFromCSV(patternFile)
+            self.sectionsRegex, self.sections = self._loadSectionPatternsFromCSV(patternFile)
         elif patternFile.lower().endswith('json'):
-            self.sections_regex, self.sections = self._loadSectionPatternsFromJSON(patternFile)
+            self.sectionsRegex, self.sections = self._loadSectionPatternsFromJSON(patternFile)
 
     def _loadSectionPatternsFromJSON(self, patternFile):
         expressions = set()
@@ -43,7 +43,10 @@ class Sectionizer:
                     yield from self._jsonSectionNameAliasGenerator(child)
 
     def _makeRegularExpression(self, sectionAlias):
-        return ('\\n\**' + sectionAlias + '\**.?\\n')
+        return {
+            '\\n\**' + sectionAlias + '\**.?\\n',
+            '\\n' + sectionAlias + ':+\s*'
+        }
 
     def _loadSectionPatternsFromCSV(self, patternFile):
         expressions = set()   # regex for section headers in document
@@ -54,7 +57,7 @@ class Sectionizer:
                 section = line.strip().split(',')[0]
                 alias = line.strip().split(',')[1].lower()
                 sections[section].append(alias)
-                expressions.add(self._makeRegularExpression(alias))
+                expressions.update(self._makeRegularExpression(alias))
 
         return expressions, sections
 
@@ -95,7 +98,7 @@ class Sectionizer:
 
         doc_sections = []  # list of sections in format of (start_char, end_char, section_header_in_doc)
 
-        for expression in self.sections_regex:
+        for expression in self.sectionsRegex:
             for match in re.finditer(expression, doc.text.lower()):
                 start, end = match.span()
                 section = doc.text.lower()[start+1:end-1]
@@ -112,21 +115,61 @@ class Sectionizer:
         # else:
         #     doc_sections = [(0, 0, '')]
 
-        return doc_sections
+        return self._cleanSectionHeadings(doc_sections)
+
+    def _cleanSectionHeadings(self, doc_sections):
+        '''Given a list of sorted doc section headings, check of overlap, returns cleaned list.'''
+        lastStart = None
+        lastEnd = None
+        lastHeading = None
+
+        output = []
+
+        def _getLongestSectionHeading(sectionHeadings):
+            return max(sectionHeadings, key=lambda x: x[1] - x[0])[2]
+
+        for start, end, heading in doc_sections:
+            if lastStart is None:  # loop initial condition
+                lastStart = start
+                lastEnd = end
+                lastHeading = heading
+                output.append((start, end, heading))
+
+            elif start >= lastEnd:  # no overlap
+                output.append((start, end, heading))
+
+            elif start < lastEnd and end > lastEnd:  # partial overlap, keep longer heading
+                output.pop()
+                combinedHeading = (start, lastEnd, _getLongestSectionHeading(
+                    [(start, end, heading), (lastStart, lastEnd, lastHeading)]))
+                output.append(combinedHeading)
+
+            lastStart = start
+            lastEnd = end
+            lastHeading = heading
+
+        return output
 
     def _sectionizeDoc(self, doc):
         '''Creates a list of sections from a given Spacy doc.
         Returns a list of dictionaries. Each dictionary contains standard_header, header_in_doc, and text_indicies.'''
 
         endings = self._findSectionEndings(doc)
-        doc_sections = self._getSectionsFromDoc(doc)
+        doc_sections = self._getSectionsFromDoc(doc)  # list of section headings as tuples: (start, end, heading)
         document = []
+
+        # print("/////// doc_sections///////")
+        # print(doc_sections)
+        # print("//////self.sections.items()//////")
+        # print(self.sections.items())
+        # print("/////////////")
 
         for i, section in enumerate(doc_sections):
             general_section = ''
-            # TODO
+            section_heading = section[2].strip().replace('*', '')[:-1]
+
             for key, value in self.sections.items():
-                if section[2].replace('*', '') in value or section[2].replace('*', '')[:-1] in value:
+                if section_heading in value:
                     general_section = key
             sec_dict = dict()
             sec_dict['standard_header'] = general_section
@@ -153,7 +196,7 @@ class Sectionizer:
             document.append(sec_dict)
         return document
 
-    def getSectionsForAnnotation(self, doc):
+    def getSections(self, doc):
         '''Returns a list of sections to be annotated.'''
         sections = self._sectionizeDoc(doc)
         sections_annotate = []

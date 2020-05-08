@@ -34,7 +34,7 @@ class Sentencizer:
                     self._set_start(doc[token.i+1], False)
         return doc
 
-    def getMatchesForAnnotation(self, doc, **kwargs):
+    def getSentences(self, doc, **kwargs):
         '''Helper function used for visualizing the whole sentences in a document. Returns a list of sentences to be annotated.'''
         sentences = []
 

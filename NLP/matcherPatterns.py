@@ -11,6 +11,7 @@ class Labels:
     NEGATION_BIDIRECTION_LABEL = NEGATION_LABEL + '_' + BIDIRECTION_LABEL
     UNKNOWN_LABEL = '??'
     ICD_KEYWORD_LABEL = 'ICD Codes'
+    NORMALIZE_LABEL = 'Normazlized Phrase'
 
 
 negation_forward_patterns = (

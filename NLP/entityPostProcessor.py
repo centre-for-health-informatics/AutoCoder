@@ -4,6 +4,7 @@ from intervaltree import Interval, IntervalTree
 class EntityPostProcessor:
     '''
     Pipeline for post-processing of matched entities. Must instantiate when a client thread connects to ensure data independence between clients.
+    Main purpose of this class is to clean up redundant entity match results, such as nested ICD code results, assign sentence distance rules, negate results, etc.
     '''
 
     def __init__(self, sections, sentences, entities, entityType):
@@ -38,8 +39,14 @@ class EntityPostProcessor:
 
         for entity in inputEntities:
             intervals = self.sectionIntervalTree[entity['start']:entity['end']]
+
+            if not intervals:  # entity not part of any section intervals
+                output.append(entity)
+                continue
+
             for interval in intervals:  # get first item from set
                 section = interval.data
+
                 if not section['tag'] in sectionsIgnored:
                     output.append(entity)
                 break
@@ -111,10 +118,13 @@ class EntityPostProcessor:
 
     def _addSentenceIndex(self, entity):
         '''Given an entity, appends sentence index as an attribute. Returns the sentence index.'''
-        interval = list(self.sentenceIntervalTree[entity['start']:entity['end']])[0]  # get first item from set
-        sentenceIndex = self.sentences.index(interval.data)
-        entity['sent-idx'] = sentenceIndex
-        return sentenceIndex
+        intervals = self.sentenceIntervalTree[entity['start']:entity['end']]
+        if intervals:
+            interval = list(self.sentenceIntervalTree[entity['start']:entity['end']])[0]  # get first item from set
+            sentenceIndex = self.sentences.index(interval.data)
+            entity['sent-idx'] = sentenceIndex
+            return sentenceIndex
+        return 0
 
     def _getLinkDepth(self, head):
         cursor = head
