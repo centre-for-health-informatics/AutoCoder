@@ -52,16 +52,18 @@ class CustomTokenizer:
 
     def getTokens(self, doc, **kwargs):
         '''Used for visualizing tokens in a document. Returns a list of tokens to be annotated.'''
+        outputDetail = kwargs.get('outputDetail')
+
         tokens = []
         for i, token in enumerate(doc):
             start = token.idx
             end = start + len(token)
 
-            if 'number' in kwargs and kwargs['number']:   # Optional argument for displaying numbering in annotations
-                label = str(i)
-            else:
-                label = ''
+            tokenAnnot = {"start": start, "end": end}
 
-            tokens.append({"start": start, "end": end, "tag": label})
+            if outputDetail:   # displaying numbering in annotations
+                tokenAnnot['number'] = i
+
+            tokens.append(tokenAnnot)
 
         return tokens

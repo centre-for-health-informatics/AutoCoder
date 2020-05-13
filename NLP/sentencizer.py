@@ -38,14 +38,16 @@ class Sentencizer:
         '''Helper function used for visualizing the whole sentences in a document. Returns a list of sentences to be annotated.'''
         sentences = []
 
+        outputDetail = kwargs.get('outputDetail')
+
         for i, sent in enumerate(doc.sents):
             start_char = doc[sent.start].idx
             end_char = doc[sent.end-1].idx + len(doc[sent.end-1])
 
-            if 'number' in kwargs and kwargs['number']:   # Optional argument for displaying numbering in annotations
-                label = str(i)
-            else:
-                label = ''
+            sentenceAnnot = {"start": start_char, "end": end_char, "tag": ""}
 
-            sentences.append({"start": start_char, "end": end_char, "tag": label, "type": "Sentences"})
+            if outputDetail:   # displaying numbering in annotations
+                sentenceAnnot['number'] = i
+
+            sentences.append(sentenceAnnot)
         return sentences

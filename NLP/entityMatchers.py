@@ -126,36 +126,50 @@ class EntityMatchers:
         self.negationMatcher.add(Labels.NEGATION_BIDIRECTION_LABEL, None, *negation_bidirection_patterns)
         self.closureMatcher.add(Labels.CLOSURE_BUT_LABEL, None, *closure_patterns)
 
-    def _parseMatches(self, matchList, doc, tagType):
+    def _parseMatches(self, matchList, doc, tagType, **kwargs):
         '''Helper function that parse the list of matches as output from Spacy, and returns a list of matches using our annotation notations.'''
+
+        outputDetail = kwargs.get('outputDetail')
 
         outputMatches = []
         for match_id, start, end in matchList:
+
             start_token = doc[start]
             end_token = doc[end-1]
-            annotate_start_char = start_token.idx
-            annotate_end_char = end_token.idx + len(end_token)
-            label = doc.vocab.strings[match_id]
-            outputMatches.append({"start": annotate_start_char, "end": annotate_end_char,
-                                  "tag": label, "type": tagType})
+
+            matchObj = {
+                "start": start_token.idx,  # start char position
+                "end": end_token.idx + len(end_token),  # end char position
+                "tag": doc.vocab.strings[match_id],  # label
+                "type": tagType
+            }
+
+            if outputDetail:
+                tokens = [doc[i] for i in range(start, end)]
+                tokenText = ""
+                for token in tokens:
+                    tokenText += token.text_with_ws
+                matchObj['text'] = tokenText
+
+            outputMatches.append(matchObj)
 
         return outputMatches
 
-    def getNegationMatches(self, doc):
+    def getNegationMatches(self, doc, **kwargs):
         '''Returns list of dictionary containing: start char #, end char #, label, type'''
         spacyMatches = self.negationMatcher(
             doc)  # list of tuples describing matches in format of (match_id, start_token_#, end_token_#)
-        annotMatches = self._parseMatches(spacyMatches, doc, 'Logic')
+        annotMatches = self._parseMatches(spacyMatches, doc, 'Logic', **kwargs)
         return annotMatches
 
-    def getClosureMatches(self, doc):
+    def getClosureMatches(self, doc, **kwargs):
         '''Returns list of dictionary containing: start char #, end char #, label, type'''
         spacyMatches = self.closureMatcher(
             doc)  # list of tuples describing matches in format of (match_id, start_token_#, end_token_#)
-        annotMatches = self._parseMatches(spacyMatches, doc, 'Logic')
+        annotMatches = self._parseMatches(spacyMatches, doc, 'Logic', **kwargs)
         return annotMatches
 
-    def getIcdKeywordMatches(self, doc, normalizedPhrases, offset=0):
+    def getIcdKeywordMatches(self, doc, normalizedPhrases, offset=0, **kwargs):
         '''Get list of ICD keyword matches from document. Parameter offset is used to produce correct overall characrer positions when this method is used to process exerpts of the document in parts.'''
         spacyMatches = self.icdKwMatcher(doc)
 
@@ -167,6 +181,7 @@ class EntityMatchers:
             annotate_start_char = start_token.idx
             annotate_end_char = end_token.idx + len(end_token)
             text = doc.text[annotate_start_char:annotate_end_char]
+
             outputMatches.append({"start": annotate_start_char + offset, "end": annotate_end_char +
                                   offset, "text": text, "type": Labels.ICD_KEYWORD_LABEL})
 
@@ -207,6 +222,6 @@ class EntityMatchers:
 
         return combinedOutput
 
-    def getLogics(self, doc):
+    def getLogics(self, doc, **kwargs):
 
-        return [*self.getNegationMatches(doc), *self.getClosureMatches(doc)]
+        return [*self.getNegationMatches(doc, **kwargs), *self.getClosureMatches(doc, **kwargs)]
