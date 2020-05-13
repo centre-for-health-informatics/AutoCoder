@@ -21,6 +21,7 @@ from NLP.languageProcessor import LanguageProcessor
 from django.contrib.postgres.fields.jsonb import KeyTextTransform, KeyTransform
 from ICD.models import TreeCode, Code
 from django.conf import settings
+import NLP.debugSettings as debugFlags
 
 
 class IsAdmin(permissions.BasePermission):
@@ -107,18 +108,24 @@ class UploadDoc(APIView):
         docFilename = doc["filename"]
         docType = doc["format"]
         docText = doc["content"]
+        outputDetailParam = request.GET.get('outputDetail')
+
+        if outputDetailParam and outputDetailParam.lower() == "true":
+            outputDetail = True
+        else:
+            outputDetail = False
 
         if settings.ENABLE_NLP:
-            docSections, docSentences, docTokens, docEntities = self._processDoc(docText)
+            docSections, docSentences, docTokens, docEntities = self._processDoc(docText, outputDetail=outputDetail)
             return Response(self._makeJSON(docFilename, docSections, docSentences, docTokens, docEntities))
         else:
             return Response({"filename": docFilename, "Sentences": [], "Tokens": [], "Entities": []})
 
-    def _processDoc(self, text):
+    def _processDoc(self, text, **kwargs):
         """Runs NLP to process document, returns document sections, sentences, tokens, and entities."""
 
         results = UploadDoc.langProcessor.analyzeText(
-            text, scope='section', removeNested=True, maxSentDist=2, sectionsIgnored=['fam_hist'], phraseNorm=True)
+            text, scope='section', removeNested=True, maxSentDist=2, sectionsIgnored=['fam_hist'], phraseNorm=True, **kwargs)
 
         entities = results['entities']
         sections = results['sections']

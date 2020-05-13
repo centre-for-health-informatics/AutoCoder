@@ -1,8 +1,8 @@
 from NLP.matcherPatterns import Labels
 from Utility.progress import printProgressBar
-
 import csv
 from spacy.matcher import PhraseMatcher
+import NLP.debugSettings as debugFlags
 
 
 class PhraseNormalizer:
@@ -74,10 +74,13 @@ class PhraseNormalizer:
             printProgressBar(i+1, total, prefix='Loading normalization phrases:', suffix='Complete', length=5)
         self.normalizePhraseMatcher.add(Labels.NORMALIZE_LABEL, None, *patterns)
 
-    def getNormPhrases(self, doc, offset=0):
+    def getNormPhrases(self, doc, offset=0, **kwargs):
         '''
         Given a doc (of type Spacy.nlp(Str)), find and return a list normalization phrases.
         '''
+        # outputDetail = kwargs.get('outputDetail')
+        debug = kwargs.get('debug')
+
         spacyMatches = self.normalizePhraseMatcher(doc)
         outputMatches = []
 
@@ -87,9 +90,23 @@ class PhraseNormalizer:
             end_token = doc[end-1]
             annotate_start_char = start_token.idx
             annotate_end_char = end_token.idx + len(end_token)
+
             text = doc.text[annotate_start_char:annotate_end_char]
             normalizedTo = self.normalizationDict[text]
-            outputMatches.append({"start": annotate_start_char + offset, "end": annotate_end_char +
-                                  offset, "text": text, "normalizedTo": normalizedTo, "type": Labels.NORMALIZE_LABEL})
+
+            matchObj = {
+                "start": annotate_start_char + offset,
+                "end": annotate_end_char + offset,
+                "text": text,
+                "normalizedTo": normalizedTo,
+                "type": Labels.NORMALIZE_LABEL
+            }
+
+            outputMatches.append(matchObj)
+
+        if debug and debugFlags.phraseNormalizer in debug:
+            print("////////////////// phraseNormalizer returns //////////////////")
+            print(outputMatches)
+            print("//////////////////////////////////////////////////////////////")
 
         return outputMatches

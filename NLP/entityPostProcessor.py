@@ -20,7 +20,7 @@ class EntityPostProcessor:
         for section in sections:
             self.sectionIntervalTree[section['start']:section['end']] = section
 
-    def processICD(self, removeNested, maxSentDist, sectionsIgnored):
+    def processICD(self, removeNested, maxSentDist, sectionsIgnored, **kwargs):
         '''Pre-defined post process specific for ICD entity types, returns list of entities for annotations.'''
 
         filteredEntities = self.filterAnnotationsFromSections(self.entities, sectionsIgnored)

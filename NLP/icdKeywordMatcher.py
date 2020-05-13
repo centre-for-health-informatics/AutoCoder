@@ -66,6 +66,7 @@ class IcdKeywordMatcher:
 
             if 'normalizedTo' in kw:
                 newKw = copy.deepcopy(kw)
+                newKw['originText'] = newKw['text']
                 newKw['text'] = newKw['normalizedTo']
                 output.append(newKw)
 
@@ -82,6 +83,8 @@ class IcdKeywordMatcher:
 
         if phraseNorm:
             keywordMatches = self._handleNormalizedPhrases(keywordMatches)
+
+        outputDetail = kwargs.get('outputDetail')
 
         icdCodeTuples = self.getICDforTokens(keywordMatches)
         ''' 
@@ -102,14 +105,23 @@ class IcdKeywordMatcher:
 
             meta.sort(key=lambda x: x['start'], reverse=False)
 
+            if outputDetail:
+                textTokens = map(lambda x: x['text'], meta)
+                textString = ', '.join(textTokens)
+
             for i, annotation in enumerate(meta):
 
                 annot = {"start": annotation['start'],
                          "end": annotation['end'],
                          "tag": icdLabel,
                          "type": Labels.ICD_KEYWORD_LABEL,
-                         **kwargs
                          }
+
+                if outputDetail:
+                    annot['text'] = annotation['text']
+
+                    if i == 0:  # putting the 'triggers' key only on the head annotation
+                        annot['triggers'] = textString
 
                 if i > 0:
 

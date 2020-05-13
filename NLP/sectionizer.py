@@ -2,6 +2,7 @@ import json
 import re
 import os
 from collections import defaultdict
+import NLP.debugSettings as debugFlags
 
 
 class Sectionizer:
@@ -150,19 +151,20 @@ class Sectionizer:
 
         return output
 
-    def _sectionizeDoc(self, doc):
+    def _sectionizeDoc(self, doc, **kwargs):
         '''Creates a list of sections from a given Spacy doc.
         Returns a list of dictionaries. Each dictionary contains standard_header, header_in_doc, and text_indicies.'''
+
+        debug = kwargs.get('debug')
 
         endings = self._findSectionEndings(doc)
         doc_sections = self._getSectionsFromDoc(doc)  # list of section headings as tuples: (start, end, heading)
         document = []
 
-        # print("/////// doc_sections///////")
-        # print(doc_sections)
-        # print("//////self.sections.items()//////")
-        # print(self.sections.items())
-        # print("/////////////")
+        if debug and debugFlags.sectionizer in debug:
+            print("/////// doc_sections///////")
+            print(doc_sections)
+            print("///////////////////////////")
 
         for i, section in enumerate(doc_sections):
             general_section = ''
@@ -173,7 +175,7 @@ class Sectionizer:
                     general_section = key
             sec_dict = dict()
             sec_dict['standard_header'] = general_section
-            sec_dict['header_in_doc'] = section
+            sec_dict['header_in_doc'] = section[2]
 
             # For all sections except the last one, go to section ending or a defined ending of a section
             if i != len(doc_sections) - 1:
@@ -196,15 +198,25 @@ class Sectionizer:
             document.append(sec_dict)
         return document
 
-    def getSections(self, doc):
+    def getSections(self, doc, **kwargs):
         '''Returns a list of sections to be annotated.'''
-        sections = self._sectionizeDoc(doc)
+        outputDetail = kwargs.get('outputDetail')
+
+        sections = self._sectionizeDoc(doc, **kwargs)
         sections_annotate = []
 
         for sec in sections:
-            start = sec['text_indicies'][0]
-            end = sec['text_indicies'][1]
-            label = sec['standard_header']
-            sections_annotate.append({"start": start, "end": end, "tag": label, "type": "Sections"})
+
+            sec_annotation = {
+                "start": sec['text_indicies'][0],
+                "end": sec['text_indicies'][1],
+                "tag": sec['standard_header'],
+                "type": "Sections",  # TODO: currently being used by frontend to generate tag template, its an unnecesary key and inefficient source for information, should be removed after frontend is updated
+            }
+
+            if outputDetail:
+                sec_annotation['header_text'] = sec['header_in_doc']
+
+            sections_annotate.append(sec_annotation)
 
         return sections_annotate
