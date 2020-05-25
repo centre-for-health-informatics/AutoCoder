@@ -109,6 +109,12 @@ class UploadDoc(APIView):
         docType = doc["format"]
         docText = doc["content"]
         outputDetailParam = request.GET.get('outputDetail')
+        debugParam = request.GET.get('debug')
+
+        if debugParam and debugParam.lower() == 'true':
+            debugOutput = True
+        else:
+            debugOutput = False
 
         if outputDetailParam and outputDetailParam.lower() == "true":
             outputDetail = True
@@ -117,9 +123,12 @@ class UploadDoc(APIView):
 
         if settings.ENABLE_NLP:
             docSections, docSentences, docTokens, docEntities = self._processDoc(docText, outputDetail=outputDetail)
-            return Response(self._makeJSON(docFilename, docSections, docSentences, docTokens, docEntities))
+            if debugOutput:
+                return Response(self._makeJSON(docFilename, docEntities, sentences=docSentences, tokens=docTokens, sections=docSections))
+            else:
+                return Response(self._makeJSON(docFilename, docEntities))
         else:
-            return Response({"filename": docFilename, "Sentences": [], "Tokens": [], "Entities": []})
+            return Response(self._makeJSON(docFilename, []))
 
     def _processDoc(self, text, **kwargs):
         """Runs NLP to process document, returns document sections, sentences, tokens, and entities."""
@@ -134,14 +143,27 @@ class UploadDoc(APIView):
 
         return (sections, sentences, tokens, entities)
 
-    def _makeJSON(self, filename, sections, sentences, tokens, entities):
+    def _makeJSON(self, filename, entities, **kwargs):
         """Makes a serialized JSON string."""
+
+        sentences = kwargs.get("sentences")
+        tokens = kwargs.get("tokens")
+        sections = kwargs.get("sections")
+
         obj = {
             "filename": filename,
             "Sentences": sentences,
             "Tokens": tokens,
-            "Entities": entities + sections
+            "Entities": entities
         }
+
+        if sentences:
+            obj['Sentences'] = sentences
+        if tokens:
+            obj['Tokens'] = tokens
+        if sections:
+            obj['Entities'] = entities + sections
+
         return obj
 
 
